@@ -1,0 +1,63 @@
+import axios from "axios";
+import type {
+    TaskFilters,
+    TasksResponse,
+    TaskResponse,
+    CreateTaskInput,
+    UpdateTaskInput,
+    TaskActionResponse,
+} from "shared";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
+
+// Automatically convert ISO date strings to Date objects in responses
+api.interceptors.response.use((response) => {
+    const convertDates = (obj: unknown): unknown => {
+        if (!obj || typeof obj !== "object") return obj;
+        if (obj instanceof Date) return obj;
+        if (Array.isArray(obj)) return obj.map(convertDates);
+
+        return Object.fromEntries(
+            Object.entries(obj).map(([k, v]) => [
+                k,
+                typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v) ? new Date(v) : convertDates(v),
+            ])
+        );
+    };
+
+    response.data = convertDates(response.data);
+    return response;
+});
+
+export const tasksApi = {
+    // Get all tasks with optional filters
+    getTasks: async (filters?: TaskFilters): Promise<TasksResponse> => {
+        const response = await api.post<TasksResponse>("/api/tasks", filters || {});
+        return response.data;
+    },
+
+    // Get a single task by ID
+    getTaskById: async (id: string): Promise<TaskResponse> => {
+        const response = await api.get<TaskResponse>(`/api/tasks/${id}`);
+        return response.data;
+    },
+
+    // Create a new task
+    createTask: async (taskData: CreateTaskInput): Promise<TaskActionResponse> => {
+        const response = await api.post<TaskActionResponse>("/api/tasks/create", taskData);
+        return response.data;
+    },
+
+    // Update an existing task
+    updateTask: async (taskData: UpdateTaskInput): Promise<TaskActionResponse> => {
+        const response = await api.put<TaskActionResponse>("/api/tasks/update", taskData);
+        return response.data;
+    },
+};
