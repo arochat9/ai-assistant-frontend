@@ -34,6 +34,15 @@ export enum RunId {
     BASELINE = "baseline",
 }
 
+export enum PlannedFor {
+    TODAY = "Today",
+    TODAY_STRETCH_GOAL = "Today - Stretch Goal",
+    TOMORROW = "Tomorrow",
+    TOMORROW_STRETCH_GOAL = "Tomorrow - Stretch Goal",
+    THIS_WEEK = "This Week",
+    THIS_WEEK_STRETCH_GOAL = "This Week (Stretch Goal)",
+}
+
 // Helper functions to get enum values as arrays
 export const getTaskStatusValues = () => Object.values(TaskStatus);
 export const getSubTypeValues = () => Object.values(SubType);
@@ -41,6 +50,7 @@ export const getTaskOrEventValues = () => Object.values(TaskOrEvent);
 export const getEventApprovalStatusValues = () => Object.values(EventApprovalStatus);
 export const getEnvironmentValues = () => Object.values(Environment);
 export const getRunIdValues = () => Object.values(RunId);
+export const getPlannedForValues = () => Object.values(PlannedFor);
 
 // Helper functions to check if a value is valid
 export const isValidTaskStatus = (value: string): value is TaskStatus =>
@@ -58,3 +68,6 @@ export const isValidEnvironment = (value: string): value is Environment =>
     Object.values(Environment).includes(value as Environment);
 
 export const isValidRunId = (value: string): value is RunId => Object.values(RunId).includes(value as RunId);
+
+export const isValidPlannedFor = (value: string): value is PlannedFor =>
+    Object.values(PlannedFor).includes(value as PlannedFor);

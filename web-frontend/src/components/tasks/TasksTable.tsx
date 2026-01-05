@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { Edit, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { useTaskDrawer } from "../../contexts/TaskDrawerContext";
+import { useTaskDialog } from "../../contexts/TaskDialogContext";
 import type { Task } from "shared";
 
 type SortField = "taskName" | "status" | "subType" | "taskDueTime" | "updatedAt";
@@ -9,13 +11,13 @@ type SortDirection = "asc" | "desc";
 
 interface TasksTableProps {
     tasks: Task[];
-    onEditTask: (task: Task) => void;
-    onRowClick: (task: Task) => void;
 }
 
-export function TasksTable({ tasks, onEditTask, onRowClick }: TasksTableProps) {
+export function TasksTable({ tasks }: TasksTableProps) {
     const [sortField, setSortField] = useState<SortField>("updatedAt");
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const { openDrawer } = useTaskDrawer();
+    const { openEditDialog } = useTaskDialog();
 
     const getStatusColor = (status: string) => {
         const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -160,7 +162,7 @@ export function TasksTable({ tasks, onEditTask, onRowClick }: TasksTableProps) {
                         <tr
                             key={task.taskId}
                             className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
-                            onClick={() => onRowClick(task)}
+                            onClick={() => openDrawer(task)}
                         >
                             <td className="p-2 align-middle font-medium">{task.taskName || "Untitled"}</td>
                             <td className="p-2 align-middle">
@@ -187,7 +189,7 @@ export function TasksTable({ tasks, onEditTask, onRowClick }: TasksTableProps) {
                                     size="sm"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onEditTask(task);
+                                        openEditDialog(task);
                                     }}
                                 >
                                     <Edit className="h-4 w-4" />
