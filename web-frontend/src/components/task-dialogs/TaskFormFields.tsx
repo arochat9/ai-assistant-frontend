@@ -47,8 +47,11 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                         value={values.taskOrEvent}
                         onChange={(e) => onChange("taskOrEvent", e.target.value)}
                     >
-                        <option value={TaskOrEvent.TASK}>Task</option>
-                        <option value={TaskOrEvent.EVENT}>Event</option>
+                        {Object.values(TaskOrEvent).map((type) => (
+                            <option key={type} value={type}>
+                                {type}
+                            </option>
+                        ))}
                     </Select>
                 </div>
                 <div>
@@ -60,10 +63,11 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                         onChange={(e) => onChange("subType", e.target.value)}
                     >
                         <option value="">Select type...</option>
-                        <option value={SubType.FUN}>Fun</option>
-                        <option value={SubType.TEXT_RESPONSE}>Text response</option>
-                        <option value={SubType.CHORE}>Chore</option>
-                        <option value={SubType.ERRAND}>Errand</option>
+                        {Object.values(SubType).map((type) => (
+                            <option key={type} value={type}>
+                                {type}
+                            </option>
+                        ))}
                     </Select>
                 </div>
             </div>
@@ -71,9 +75,11 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
             <div>
                 <Label htmlFor="status">Status</Label>
                 <Select id="status" value={values.status} onChange={(e) => onChange("status", e.target.value)}>
-                    <option value={TaskStatus.OPEN}>Open</option>
-                    <option value={TaskStatus.CLOSED}>Closed</option>
-                    <option value={TaskStatus.BACKLOGGED}>Backlogged</option>
+                    {Object.values(TaskStatus).map((status) => (
+                        <option key={status} value={status}>
+                            {status}
+                        </option>
+                    ))}
                 </Select>
             </div>
 
@@ -86,12 +92,11 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                         onChange={(e) => onChange("plannedFor", e.target.value)}
                     >
                         <option value="">Not planned</option>
-                        <option value={PlannedFor.TODAY}>Today</option>
-                        <option value={PlannedFor.TODAY_STRETCH_GOAL}>Today - Stretch Goal</option>
-                        <option value={PlannedFor.TOMORROW}>Tomorrow</option>
-                        <option value={PlannedFor.TOMORROW_STRETCH_GOAL}>Tomorrow - Stretch Goal</option>
-                        <option value={PlannedFor.THIS_WEEK}>This Week</option>
-                        <option value={PlannedFor.THIS_WEEK_STRETCH_GOAL}>This Week (Stretch Goal)</option>
+                        {Object.values(PlannedFor).map((plan) => (
+                            <option key={plan} value={plan}>
+                                {plan}
+                            </option>
+                        ))}
                     </Select>
                 </div>
                 <div>
@@ -102,8 +107,11 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                         onChange={(e) => onChange("source", e.target.value)}
                     >
                         <option value="">Select source...</option>
-                        <option value={Source.USER}>User</option>
-                        <option value={Source.AGENT}>Agent</option>
+                        {Object.values(Source).map((src) => (
+                            <option key={src} value={src}>
+                                {src}
+                            </option>
+                        ))}
                     </Select>
                 </div>
             </div>

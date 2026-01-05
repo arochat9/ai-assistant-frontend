@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, Environment, RunId, PlannedFor, Source } from "./enums";
+import { TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, PlannedFor, Source } from "./enums";
 
 // Custom Task interface (excludes runId and environment from OSDK Task)
 export interface Task {
