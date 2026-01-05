@@ -12,8 +12,10 @@ import {
     TasksResponse,
     TaskResponse,
     TaskActionResponse,
+    Environment,
 } from "shared";
 import { convertOsdkTaskToTask } from "../utils/taskConverter";
+import { parseDateFields, normalizeOptionalFields } from "../utils/requestParser";
 
 /**
  * POST endpoint that fetches tasks with optional filtering
@@ -25,7 +27,7 @@ export async function getTasks(req: Request, res: Response) {
         const filters: TaskFilters = req.body;
 
         const whereConditions: Array<Record<string, unknown>> = [
-            { environment: { $eq: "prod" } },
+            { environment: { $eq: Environment.PRODUCTION } },
             { taskOrEvent: { $eq: "Task" } },
         ];
 
@@ -108,38 +110,44 @@ export async function getTaskById(req: Request, res: Response) {
  */
 export async function createNewTask(req: Request, res: Response) {
     try {
+        // Parse date strings to Date objects and normalize empty strings
+        const normalizedBody = normalizeOptionalFields(req.body);
+        const bodyWithDates = parseDateFields(normalizedBody);
+
         // Validate request body against schema
-        const taskData: CreateTaskInput = CreateTaskSchema.parse(req.body);
+        const taskData: CreateTaskInput = CreateTaskSchema.parse(bodyWithDates);
 
         // Convert Date objects to ISO strings for Foundry API
         const foundryData = {
             ...taskData,
-            task_due_time: taskData.task_due_time?.toISOString(),
-            event_start_time: taskData.event_start_time?.toISOString(),
-            event_end_time: taskData.event_end_time?.toISOString(),
+            eventEndTime: taskData.eventEndTime?.toISOString(),
+            eventStartTime: taskData.eventStartTime?.toISOString(),
+            taskDueTime: taskData.taskDueTime?.toISOString(),
         };
 
-        await client(Actions.createTask).applyAction(foundryData);
-
-        // Query for the most recently created task matching the task_name
-        // This is a workaround since the action doesn't return the created object
-        const tasksQuery = client(OsdkTask).where({
-            $and: [{ taskName: { $eq: taskData.task_name } }, { environment: { $eq: taskData.environment } }],
+        const result = await client(Actions.createTaskFromUi).applyAction(foundryData, {
+            $returnEdits: true,
         });
 
-        const tasksPage = await tasksQuery.fetchPage({ $pageSize: 1, $orderBy: { createdAt: "desc" } });
-        const osdkTask = tasksPage.data[0];
-
-        if (!osdkTask) {
+        if (result.type !== "edits" || !result.addedObjects || result.addedObjects.length === 0) {
             return res.status(500).json({
                 error: "Failed to create task",
-                details: "Could not fetch created task",
+                details: "Action did not return created object",
             });
         }
 
-        // Convert OSDK task to custom Task object
+        // Fetch the created task using the primary key from the action response
+        const createdTaskRef = result.addedObjects[0];
+        const osdkTask = await client(OsdkTask).fetchOne(createdTaskRef.primaryKey as string);
+        
+        if (!osdkTask) {
+            return res.status(500).json({
+                error: "Failed to fetch created task",
+                details: "Task was created but could not be retrieved",
+            });
+        }
+        
         const task = convertOsdkTaskToTask(osdkTask);
-
         return res.status(201).json({ success: true, task });
     } catch (error) {
         console.error("Error creating task:", error);
@@ -156,32 +164,44 @@ export async function createNewTask(req: Request, res: Response) {
  */
 export async function updateExistingTask(req: Request, res: Response) {
     try {
+        // Parse date strings to Date objects and normalize empty strings
+        const normalizedBody = normalizeOptionalFields(req.body);
+        const bodyWithDates = parseDateFields(normalizedBody);
+
         // Validate request body against schema
-        const taskData: UpdateTaskInput = UpdateTaskSchema.parse(req.body);
+        const taskData: UpdateTaskInput = UpdateTaskSchema.parse(bodyWithDates);
 
         // Convert Date objects to ISO strings for Foundry API
         const foundryData = {
             ...taskData,
-            task_due_time: taskData.task_due_time?.toISOString(),
-            event_start_time: taskData.event_start_time?.toISOString(),
-            event_end_time: taskData.event_end_time?.toISOString(),
+            eventEndTime: taskData.eventEndTime?.toISOString(),
+            eventStartTime: taskData.eventStartTime?.toISOString(),
+            taskDueTime: taskData.taskDueTime?.toISOString(),
         };
 
-        await client(Actions.updateTask).applyAction(foundryData);
+        const result = await client(Actions.updateTaskFromUi).applyAction(foundryData, {
+            $returnEdits: true,
+        });
 
-        // Fetch the updated task
-        const osdkTask = await client(OsdkTask).fetchOne(taskData.taskId);
-
-        if (!osdkTask) {
+        if (result.type !== "edits" || !result.modifiedObjects || result.modifiedObjects.length === 0) {
             return res.status(500).json({
                 error: "Failed to update task",
-                details: "Could not fetch updated task",
+                details: "Action did not return modified object",
             });
         }
 
-        // Convert OSDK task to custom Task object
+        // Fetch the updated task using the primary key from the action response
+        const updatedTaskRef = result.modifiedObjects[0];
+        const osdkTask = await client(OsdkTask).fetchOne(updatedTaskRef.primaryKey as string);
+        
+        if (!osdkTask) {
+            return res.status(500).json({
+                error: "Failed to fetch updated task",
+                details: "Task was updated but could not be retrieved",
+            });
+        }
+        
         const task = convertOsdkTaskToTask(osdkTask);
-
         return res.json({ success: true, task });
     } catch (error) {
         console.error("Error updating task:", error);

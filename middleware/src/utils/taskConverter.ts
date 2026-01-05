@@ -1,6 +1,6 @@
 import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
 import { Osdk } from "@osdk/client";
-import { Task, TaskStatus, SubType, TaskOrEvent, EventApprovalStatus } from "shared";
+import { Task, TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, PlannedFor, Source } from "shared";
 
 /**
  * Converts an OSDK Task instance to our custom Task interface
@@ -23,5 +23,9 @@ export function convertOsdkTaskToTask(osdkTask: Osdk.Instance<OsdkTask>): Task {
         updatedAt: osdkTask.updatedAt ? new Date(osdkTask.updatedAt) : new Date(),
         completedAt: osdkTask.completedAt ? new Date(osdkTask.completedAt) : undefined,
         unversionedTaskId: osdkTask.unversionedTaskId,
+        plannedFor: osdkTask.plannedFor as PlannedFor | undefined,
+        source: osdkTask.source as Source | undefined,
+        tags: osdkTask.tags,
+        userNotes: osdkTask.userNotes,
     };
 }

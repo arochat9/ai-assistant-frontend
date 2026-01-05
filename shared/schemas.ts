@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, Environment, RunId } from "./enums";
+import { TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, Environment, RunId, PlannedFor, Source } from "./enums";
 
 // Custom Task interface (excludes runId and environment from OSDK Task)
 export interface Task {
@@ -18,6 +18,10 @@ export interface Task {
     updatedAt: Date;
     completedAt?: Date;
     unversionedTaskId?: string;
+    plannedFor?: PlannedFor;
+    source?: Source;
+    tags?: string[];
+    userNotes?: string;
 }
 
 // Task Filters Schema
@@ -32,18 +36,18 @@ export type TaskFilters = z.infer<typeof TaskFiltersSchema>;
 
 // Create Task Schema
 export const CreateTaskSchema = z.object({
-    environment: z.nativeEnum(Environment),
-    event_end_time: z.date().optional(),
-    event_start_time: z.date().optional(),
     eventApprovalStatus: z.nativeEnum(EventApprovalStatus).optional(),
-    runID: z.nativeEnum(RunId),
-    sourceMessageIds: z.array(z.string()),
+    eventEndTime: z.date().optional(),
+    eventStartTime: z.date().optional(),
+    plannedFor: z.nativeEnum(PlannedFor).optional(),
+    source: z.nativeEnum(Source).optional(),
     status: z.nativeEnum(TaskStatus),
-    task_context: z.string().optional(),
-    task_due_time: z.date().optional(),
-    task_name: z.string(),
-    task_or_event: z.nativeEnum(TaskOrEvent),
-    task_type: z.nativeEnum(SubType),
+    subType: z.nativeEnum(SubType),
+    tags: z.array(z.string()).optional(),
+    taskDueTime: z.date().optional(),
+    taskName: z.string().optional(),
+    taskOrEvent: z.nativeEnum(TaskOrEvent),
+    userNotes: z.string().optional(),
 });
 
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
@@ -51,17 +55,18 @@ export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;
 // Update Task Schema - timestamps are Date objects
 export const UpdateTaskSchema = z.object({
     taskId: z.string(),
-    runId: z.nativeEnum(RunId),
-    task_name: z.string().optional(),
-    task_type: z.nativeEnum(SubType).optional(),
-    task_or_event: z.nativeEnum(TaskOrEvent).optional(),
-    task_due_time: z.date().optional(),
-    event_start_time: z.date().optional(),
-    event_end_time: z.date().optional(),
-    status: z.nativeEnum(TaskStatus).optional(),
-    task_context: z.string().optional(),
-    additionalMessageIds: z.array(z.string()).optional(),
     eventApprovalStatus: z.nativeEnum(EventApprovalStatus).optional(),
+    eventEndTime: z.date().optional(),
+    eventStartTime: z.date().optional(),
+    plannedFor: z.nativeEnum(PlannedFor).optional(),
+    source: z.nativeEnum(Source).optional(),
+    status: z.nativeEnum(TaskStatus),
+    subType: z.nativeEnum(SubType),
+    tags: z.array(z.string()).optional(),
+    taskDueTime: z.date().optional(),
+    taskName: z.string().optional(),
+    taskOrEvent: z.nativeEnum(TaskOrEvent),
+    userNotes: z.string().optional(),
 });
 
 export type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;

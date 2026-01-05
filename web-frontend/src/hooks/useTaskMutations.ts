@@ -22,15 +22,9 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
 
             // Create optimistic task
             const optimisticTask: Task = {
+                ...newTask,
                 taskId: `temp-${Date.now()}`,
-                taskName: newTask.task_name,
-                status: newTask.status,
-                subType: newTask.task_type,
-                taskOrEvent: newTask.task_or_event,
-                taskContext: newTask.task_context,
-                taskDueTime: newTask.task_due_time,
-                eventStartTime: newTask.event_start_time,
-                eventEndTime: newTask.event_end_time,
+                taskName: newTask.taskName || "",
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -51,7 +45,7 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
         onSuccess: (response) => {
             if (!response.task) return;
 
-            // Replace temp task with real task in ALL caches
+            // Replace temp task with real task from server
             const allCachedQueries = queryClient.getQueriesData<TasksResponse>({ queryKey: ["tasks"] });
             allCachedQueries.forEach(([queryKey, oldData]) => {
                 if (!oldData) return;
@@ -94,14 +88,7 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
 
                     return {
                         ...task,
-                        taskName: updatedTask.task_name ?? task.taskName,
-                        status: updatedTask.status ?? task.status,
-                        subType: updatedTask.task_type ?? task.subType,
-                        taskOrEvent: updatedTask.task_or_event ?? task.taskOrEvent,
-                        taskContext: updatedTask.task_context ?? task.taskContext,
-                        taskDueTime: updatedTask.task_due_time ?? task.taskDueTime,
-                        eventStartTime: updatedTask.event_start_time ?? task.eventStartTime,
-                        eventEndTime: updatedTask.event_end_time ?? task.eventEndTime,
+                        ...updatedTask,
                         updatedAt: new Date(),
                     };
                 });
@@ -112,19 +99,17 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
                 });
             });
 
-            // Close dialog and update selected task immediately
+            // Close dialog immediately with optimistic data
             const currentData = queryClient.getQueryData<TasksResponse>(["tasks", filters]);
             const optimisticTask = currentData?.tasks.find((t) => t.taskId === updatedTask.taskId);
-            if (optimisticTask) {
-                onUpdateSuccess?.(optimisticTask);
-            }
+            onUpdateSuccess?.(optimisticTask);
 
             return { previousQueries, updatedTaskId: updatedTask.taskId };
         },
-        onSuccess: (response, _variables, context) => {
+        onSuccess: (response) => {
             if (!response.task) return;
 
-            // Update all caches with real server data
+            // Sync with real server data
             const allCachedQueries = queryClient.getQueriesData<TasksResponse>({ queryKey: ["tasks"] });
             allCachedQueries.forEach(([queryKey, oldData]) => {
                 if (!oldData) return;
@@ -138,11 +123,6 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
                     tasks: updatedTasks,
                 });
             });
-
-            // Update selected task with real data
-            if (context?.updatedTaskId === response.task.taskId) {
-                onUpdateSuccess?.(response.task);
-            }
 
             toast.success("Task updated successfully");
         },

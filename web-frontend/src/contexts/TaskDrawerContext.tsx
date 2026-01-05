@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Task } from "shared";
 
+const DRAWER_ANIMATION_DELAY = 150;
+
 interface TaskDrawerContextType {
     isOpen: boolean;
     task: Task | null;
     openDrawer: (task: Task) => void;
     closeDrawer: () => void;
+    updateTask: (task: Task) => void;
 }
 
 const TaskDrawerContext = createContext<TaskDrawerContextType | undefined>(undefined);
@@ -21,7 +24,11 @@ export function TaskDrawerProvider({ children }: { children: ReactNode }) {
 
     const closeDrawer = () => {
         setIsOpen(false);
-        setTimeout(() => setTask(null), 150);
+        setTimeout(() => setTask(null), DRAWER_ANIMATION_DELAY);
+    };
+
+    const updateTask = (updatedTask: Task) => {
+        setTask(updatedTask);
     };
 
     return (
@@ -31,6 +38,7 @@ export function TaskDrawerProvider({ children }: { children: ReactNode }) {
                 task,
                 openDrawer,
                 closeDrawer,
+                updateTask,
             }}
         >
             {children}

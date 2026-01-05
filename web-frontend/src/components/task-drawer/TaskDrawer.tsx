@@ -73,6 +73,44 @@ export function TaskDrawer() {
                         </div>
                     )}
 
+                    {/* User Notes */}
+                    {task.userNotes && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Notes</h4>
+                            <p className="text-sm whitespace-pre-wrap">{task.userNotes}</p>
+                        </div>
+                    )}
+
+                    {/* Planned For */}
+                    {task.plannedFor && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Planned For</h4>
+                            <Badge variant="outline">{task.plannedFor}</Badge>
+                        </div>
+                    )}
+
+                    {/* Source */}
+                    {task.source && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Source</h4>
+                            <Badge variant="outline">{task.source}</Badge>
+                        </div>
+                    )}
+
+                    {/* Tags */}
+                    {task.tags && task.tags.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Tags</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {task.tags.map((tag, index) => (
+                                    <Badge key={index} variant="secondary">
+                                        {tag}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Due Date */}
                     <div>
                         <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">

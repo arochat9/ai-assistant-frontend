@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { TaskFormFields } from "./TaskFormFields";
-import { TaskStatus, TaskOrEvent, Environment, SubType, RunId } from "shared";
+import { TaskStatus, TaskOrEvent, SubType, Source } from "shared";
 import type { CreateTaskInput } from "shared";
 
 interface TaskCreateDialogProps {
@@ -14,18 +14,16 @@ interface TaskCreateDialogProps {
 
 export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: TaskCreateDialogProps) {
     const [formData, setFormData] = useState<CreateTaskInput>({
-        environment: Environment.PRODUCTION,
-        runID: RunId.BASELINE,
-        sourceMessageIds: ["manual-creation"],
         status: TaskStatus.OPEN,
-        task_name: "",
-        task_or_event: TaskOrEvent.TASK,
-        task_type: SubType.FUN,
+        taskName: "",
+        taskOrEvent: TaskOrEvent.TASK,
+        subType: SubType.FUN,
+        source: Source.USER,
     });
 
-    const handleChange = (field: string, value: string) => {
-        if (field === "task_due_time" || field === "event_start_time" || field === "event_end_time") {
-            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value) : undefined }));
+    const handleChange = (field: string, value: string | string[]) => {
+        if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
+            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value as string) : undefined }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
         }
@@ -48,17 +46,18 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
                     <TaskFormFields
                         values={{
                             ...formData,
-                            task_due_time:
-                                formData.task_due_time instanceof Date
-                                    ? formData.task_due_time.toISOString().slice(0, 16)
+                            taskName: formData.taskName || "",
+                            taskDueTime:
+                                formData.taskDueTime instanceof Date
+                                    ? formData.taskDueTime.toISOString().slice(0, 16)
                                     : "",
-                            event_start_time:
-                                formData.event_start_time instanceof Date
-                                    ? formData.event_start_time.toISOString().slice(0, 16)
+                            eventStartTime:
+                                formData.eventStartTime instanceof Date
+                                    ? formData.eventStartTime.toISOString().slice(0, 16)
                                     : "",
-                            event_end_time:
-                                formData.event_end_time instanceof Date
-                                    ? formData.event_end_time.toISOString().slice(0, 16)
+                            eventEndTime:
+                                formData.eventEndTime instanceof Date
+                                    ? formData.eventEndTime.toISOString().slice(0, 16)
                                     : "",
                         }}
                         onChange={handleChange}

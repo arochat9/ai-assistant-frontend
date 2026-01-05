@@ -1,35 +1,38 @@
 import { Input } from "../ui/input";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
-import { TaskStatus, TaskOrEvent, SubType } from "shared";
+import { TaskStatus, TaskOrEvent, SubType, PlannedFor, Source } from "shared";
 
 interface TaskFormFieldsProps {
     values: {
-        task_name: string;
-        task_type: string;
-        task_or_event: string;
+        taskName: string;
+        subType: string;
+        taskOrEvent: string;
         status: string;
-        task_context?: string;
-        task_due_time?: string;
-        event_start_time?: string;
-        event_end_time?: string;
+        userNotes?: string;
+        taskDueTime?: string;
+        eventStartTime?: string;
+        eventEndTime?: string;
+        plannedFor?: string;
+        source?: string;
+        tags?: string[];
     };
-    onChange: (field: string, value: string) => void;
+    onChange: (field: string, value: string | string[]) => void;
     showRequired?: boolean;
 }
 
 export function TaskFormFields({ values, onChange, showRequired = false }: TaskFormFieldsProps) {
-    const isEvent = values.task_or_event === TaskOrEvent.EVENT;
+    const isEvent = values.taskOrEvent === TaskOrEvent.EVENT;
 
     return (
         <>
             <div>
-                <Label htmlFor="task_name">Task Name {showRequired && "*"}</Label>
+                <Label htmlFor="taskName">Task Name {showRequired && "*"}</Label>
                 <Input
-                    id="task_name"
+                    id="taskName"
                     required={showRequired}
-                    value={values.task_name}
-                    onChange={(e) => onChange("task_name", e.target.value)}
+                    value={values.taskName}
+                    onChange={(e) => onChange("taskName", e.target.value)}
                     placeholder="Enter task name"
                     autoComplete="off"
                 />
@@ -37,24 +40,24 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
 
             <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                    <Label htmlFor="task_or_event">Type {showRequired && "*"}</Label>
+                    <Label htmlFor="taskOrEvent">Type {showRequired && "*"}</Label>
                     <Select
-                        id="task_or_event"
+                        id="taskOrEvent"
                         required={showRequired}
-                        value={values.task_or_event}
-                        onChange={(e) => onChange("task_or_event", e.target.value)}
+                        value={values.taskOrEvent}
+                        onChange={(e) => onChange("taskOrEvent", e.target.value)}
                     >
                         <option value={TaskOrEvent.TASK}>Task</option>
                         <option value={TaskOrEvent.EVENT}>Event</option>
                     </Select>
                 </div>
                 <div>
-                    <Label htmlFor="task_type">Sub Type {showRequired && "*"}</Label>
+                    <Label htmlFor="subType">Sub Type {showRequired && "*"}</Label>
                     <Select
-                        id="task_type"
+                        id="subType"
                         required={showRequired}
-                        value={values.task_type}
-                        onChange={(e) => onChange("task_type", e.target.value)}
+                        value={values.subType}
+                        onChange={(e) => onChange("subType", e.target.value)}
                     >
                         <option value="">Select type...</option>
                         <option value={SubType.FUN}>Fun</option>
@@ -74,45 +77,95 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                 </Select>
             </div>
 
+            <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                    <Label htmlFor="plannedFor">Planned For</Label>
+                    <Select
+                        id="plannedFor"
+                        value={values.plannedFor || ""}
+                        onChange={(e) => onChange("plannedFor", e.target.value)}
+                    >
+                        <option value="">Not planned</option>
+                        <option value={PlannedFor.TODAY}>Today</option>
+                        <option value={PlannedFor.TODAY_STRETCH_GOAL}>Today - Stretch Goal</option>
+                        <option value={PlannedFor.TOMORROW}>Tomorrow</option>
+                        <option value={PlannedFor.TOMORROW_STRETCH_GOAL}>Tomorrow - Stretch Goal</option>
+                        <option value={PlannedFor.THIS_WEEK}>This Week</option>
+                        <option value={PlannedFor.THIS_WEEK_STRETCH_GOAL}>This Week (Stretch Goal)</option>
+                    </Select>
+                </div>
+                <div>
+                    <Label htmlFor="source">Source</Label>
+                    <Select
+                        id="source"
+                        value={values.source || ""}
+                        onChange={(e) => onChange("source", e.target.value)}
+                    >
+                        <option value="">Select source...</option>
+                        <option value={Source.USER}>User</option>
+                        <option value={Source.AGENT}>Agent</option>
+                    </Select>
+                </div>
+            </div>
+
             <div>
-                <Label htmlFor="task_context">Context</Label>
+                <Label htmlFor="userNotes">Notes</Label>
                 <Input
-                    id="task_context"
-                    value={values.task_context || ""}
-                    onChange={(e) => onChange("task_context", e.target.value)}
-                    placeholder="Add additional context..."
+                    id="userNotes"
+                    value={values.userNotes || ""}
+                    onChange={(e) => onChange("userNotes", e.target.value)}
+                    placeholder="Add notes or context..."
                     autoComplete="off"
                 />
             </div>
 
             <div>
-                <Label htmlFor="task_due_time">Due Date</Label>
+                <Label htmlFor="tags">Tags (comma-separated)</Label>
                 <Input
-                    id="task_due_time"
+                    id="tags"
+                    value={values.tags?.join(", ") || ""}
+                    onChange={(e) =>
+                        onChange(
+                            "tags",
+                            e.target.value
+                                .split(",")
+                                .map((tag) => tag.trim())
+                                .filter(Boolean)
+                        )
+                    }
+                    placeholder="work, urgent, personal..."
+                    autoComplete="off"
+                />
+            </div>
+
+            <div>
+                <Label htmlFor="taskDueTime">Due Date</Label>
+                <Input
+                    id="taskDueTime"
                     type="datetime-local"
-                    value={values.task_due_time || ""}
-                    onChange={(e) => onChange("task_due_time", e.target.value)}
+                    value={values.taskDueTime || ""}
+                    onChange={(e) => onChange("taskDueTime", e.target.value)}
                 />
             </div>
 
             {isEvent && (
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                        <Label htmlFor="event_start_time">Event Start</Label>
+                        <Label htmlFor="eventStartTime">Event Start</Label>
                         <Input
-                            id="event_start_time"
+                            id="eventStartTime"
                             type="datetime-local"
-                            value={values.event_start_time || ""}
-                            onChange={(e) => onChange("event_start_time", e.target.value)}
+                            value={values.eventStartTime || ""}
+                            onChange={(e) => onChange("eventStartTime", e.target.value)}
                         />
                     </div>
                     <div>
-                        <Label htmlFor="event_end_time">Event End</Label>
+                        <Label htmlFor="eventEndTime">Event End</Label>
                         <Input
-                            id="event_end_time"
+                            id="eventEndTime"
                             type="datetime-local"
-                            value={values.event_end_time || ""}
-                            onChange={(e) => onChange("event_end_time", e.target.value)}
+                            value={values.eventEndTime || ""}
+                            onChange={(e) => onChange("eventEndTime", e.target.value)}
                         />
                     </div>
                 </div>

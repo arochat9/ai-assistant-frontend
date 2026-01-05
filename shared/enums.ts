@@ -43,6 +43,11 @@ export enum PlannedFor {
     THIS_WEEK_STRETCH_GOAL = "This Week (Stretch Goal)",
 }
 
+export enum Source {
+    AGENT = "Agent",
+    USER = "User",
+}
+
 // Helper functions to get enum values as arrays
 export const getTaskStatusValues = () => Object.values(TaskStatus);
 export const getSubTypeValues = () => Object.values(SubType);
@@ -51,6 +56,7 @@ export const getEventApprovalStatusValues = () => Object.values(EventApprovalSta
 export const getEnvironmentValues = () => Object.values(Environment);
 export const getRunIdValues = () => Object.values(RunId);
 export const getPlannedForValues = () => Object.values(PlannedFor);
+export const getSourceValues = () => Object.values(Source);
 
 // Helper functions to check if a value is valid
 export const isValidTaskStatus = (value: string): value is TaskStatus =>
@@ -71,3 +77,5 @@ export const isValidRunId = (value: string): value is RunId => Object.values(Run
 
 export const isValidPlannedFor = (value: string): value is PlannedFor =>
     Object.values(PlannedFor).includes(value as PlannedFor);
+
+export const isValidSource = (value: string): value is Source => Object.values(Source).includes(value as Source);
