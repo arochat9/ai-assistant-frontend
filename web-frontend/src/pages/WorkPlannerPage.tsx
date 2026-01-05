@@ -5,7 +5,7 @@ export function WorkPlannerPage() {
                 <h1 className="text-2xl font-bold">Work Planner</h1>
                 <p className="mt-1 text-sm text-gray-600">Plan and organize your work</p>
             </div>
-            
+
             <div className="flex-1 p-6">
                 <div className="rounded-lg border bg-white p-8 text-center">
                     <h2 className="text-lg font-medium text-gray-900">Work Planner</h2>
