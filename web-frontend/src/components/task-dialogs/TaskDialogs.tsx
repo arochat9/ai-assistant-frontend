@@ -17,7 +17,6 @@ export function TaskDialogs() {
     };
 
     const { createMutation, updateMutation } = useTaskMutations({
-        filters: {},
         onCreateSuccess: closeCreateDialog,
         onUpdateSuccess: handleUpdateSuccess,
     });

@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { tasksApi } from "../services/api";
-import type { Task, TasksResponse, TaskFilters } from "shared";
+import type { Task, TasksResponse } from "shared";
 
 interface UseTaskMutationsOptions {
-    filters: TaskFilters;
     onCreateSuccess?: () => void;
     onUpdateSuccess?: (task?: Task) => void;
 }
 
-export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: UseTaskMutationsOptions) {
+export function useTaskMutations({ onCreateSuccess, onUpdateSuccess }: UseTaskMutationsOptions) {
     const queryClient = useQueryClient();
 
     const createMutation = useMutation({
@@ -79,6 +78,9 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
             // Snapshot all task queries
             const previousQueries = queryClient.getQueriesData<TasksResponse>({ queryKey: ["tasks"] });
 
+            // Build optimistic task for callback
+            let optimisticTask: Task | undefined;
+
             // Optimistically update all cached queries
             previousQueries.forEach(([queryKey, oldData]) => {
                 if (!oldData) return;
@@ -86,11 +88,18 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
                 const updatedTasks = oldData.tasks.map((task) => {
                     if (task.taskId !== updatedTask.taskId) return task;
 
-                    return {
+                    const updated = {
                         ...task,
                         ...updatedTask,
                         updatedAt: new Date(),
                     };
+
+                    // Capture optimistic task for callback
+                    if (!optimisticTask) {
+                        optimisticTask = updated;
+                    }
+
+                    return updated;
                 });
 
                 queryClient.setQueryData<TasksResponse>(queryKey, {
@@ -100,8 +109,6 @@ export function useTaskMutations({ filters, onCreateSuccess, onUpdateSuccess }: 
             });
 
             // Close dialog immediately with optimistic data
-            const currentData = queryClient.getQueryData<TasksResponse>(["tasks", filters]);
-            const optimisticTask = currentData?.tasks.find((t) => t.taskId === updatedTask.taskId);
             onUpdateSuccess?.(optimisticTask);
 
             return { previousQueries, updatedTaskId: updatedTask.taskId };

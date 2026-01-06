@@ -8,10 +8,10 @@ import { TasksTable } from "../components/tasks/TasksTable";
 import { EmptyState } from "../components/tasks/EmptyState";
 import { useTaskDialog } from "../contexts/TaskDialogContext";
 import type { TaskFilters as TaskFiltersType } from "shared";
-import { TaskStatus } from "shared";
+// import { TaskStatus } from "shared";
 
 export function TasksPage() {
-    const [filters, setFilters] = useState<TaskFiltersType>({ status: TaskStatus.OPEN });
+    const [filters, setFilters] = useState<TaskFiltersType>({});
     const { openCreateDialog } = useTaskDialog();
 
     const { data, isLoading, error } = useQuery({
