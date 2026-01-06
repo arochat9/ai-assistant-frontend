@@ -68,6 +68,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
                                 formData.eventEndTime instanceof Date
                                     ? formData.eventEndTime.toISOString().slice(0, 16)
                                     : "",
+                            tags: Array.isArray(formData.tags) ? formData.tags.join(", ") : formData.tags,
                         }}
                         onChange={handleChange}
                         showRequired
