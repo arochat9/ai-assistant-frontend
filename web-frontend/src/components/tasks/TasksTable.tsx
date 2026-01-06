@@ -1,204 +1,118 @@
-import { useState, useMemo } from "react";
-import { Edit, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { DataTable, type ColumnDef } from "../ui/data-table";
 import { useTaskDrawer } from "../../contexts/TaskDrawerContext";
 import { useTaskDialog } from "../../contexts/TaskDialogContext";
-import type { Task } from "shared";
-
-type SortField = "taskName" | "status" | "subType" | "taskDueTime" | "updatedAt";
-type SortDirection = "asc" | "desc";
+import { useTaskMutations } from "../../hooks/useTaskMutations";
+import { getSubTypeValues } from "shared";
+import type { Task, TaskStatus, SubType, PlannedFor } from "shared";
 
 interface TasksTableProps {
     tasks: Task[];
 }
 
 export function TasksTable({ tasks }: TasksTableProps) {
-    const [sortField, setSortField] = useState<SortField>("updatedAt");
-    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const { openDrawer } = useTaskDrawer();
     const { openEditDialog } = useTaskDialog();
+    const { updateMutation } = useTaskMutations({});
 
-    const getStatusColor = (status: string) => {
-        const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-            "Not Started": "outline",
-            "In Progress": "default",
-            Completed: "secondary",
-            Cancelled: "destructive",
+    const handleCellEdit = async (task: Task, columnKey: string, newValue: unknown) => {
+        const updates = {
+            taskId: task.taskId,
+            taskOrEvent: task.taskOrEvent,
+            status: task.status,
+            subType: task.subType,
         };
-        return statusMap[status] || "outline";
-    };
 
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortDirection("asc");
+        if (columnKey === "taskName") {
+            await updateMutation.mutateAsync({ ...updates, taskName: newValue as string });
+        } else if (columnKey === "status") {
+            await updateMutation.mutateAsync({ ...updates, status: newValue as TaskStatus });
+        } else if (columnKey === "subType") {
+            await updateMutation.mutateAsync({ ...updates, subType: newValue as SubType });
+        } else if (columnKey === "plannedFor") {
+            await updateMutation.mutateAsync({ ...updates, plannedFor: newValue as PlannedFor });
         }
     };
 
-    const getSortIcon = (field: SortField) => {
-        if (sortField !== field) {
-            return <ArrowUpDown className="ml-2 h-4 w-4" />;
-        }
-        return sortDirection === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
-    };
-
-    const sortedTasks = useMemo(() => {
-        return [...tasks].sort((a, b) => {
-            let aValue: string | number | Date | undefined;
-            let bValue: string | number | Date | undefined;
-
-            switch (sortField) {
-                case "taskName":
-                    aValue = a.taskName?.toLowerCase() || "";
-                    bValue = b.taskName?.toLowerCase() || "";
-                    break;
-                case "status":
-                    aValue = a.status || "";
-                    bValue = b.status || "";
-                    break;
-                case "subType":
-                    aValue = a.subType || "";
-                    bValue = b.subType || "";
-                    break;
-                case "taskDueTime":
-                    aValue = a.taskDueTime?.getTime() || 0;
-                    bValue = b.taskDueTime?.getTime() || 0;
-                    break;
-                case "updatedAt":
-                    aValue = a.updatedAt.getTime();
-                    bValue = b.updatedAt.getTime();
-                    break;
-            }
-
-            if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-            if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-            return 0;
-        });
-    }, [tasks, sortField, sortDirection]);
+    const columns: ColumnDef<Task>[] = [
+        {
+            key: "taskName",
+            header: "Name",
+            sortable: true,
+            editable: true,
+            accessor: (task) => task.taskName,
+            sortValue: (task) => task.taskName?.toLowerCase() || "",
+            cell: (value) => <span className="font-medium">{(value as string) || "Untitled"}</span>,
+        },
+        {
+            key: "status",
+            header: "Status",
+            sortable: true,
+            editable: true,
+            editType: "checkbox",
+            accessor: (task) => task.status,
+        },
+        {
+            key: "subType",
+            header: "Subtype",
+            sortable: true,
+            editable: true,
+            editType: "select",
+            selectOptions: getSubTypeValues(),
+            accessor: (task) => task.subType,
+            cell: (value) => <Badge variant="outline">{(value as string) || "N/A"}</Badge>,
+        },
+        {
+            key: "taskDueTime",
+            header: "Due Date",
+            sortable: true,
+            editable: false,
+            accessor: (task) => task.taskDueTime,
+            sortValue: (task) => task.taskDueTime?.getTime() || 0,
+            cell: (value) => (value ? new Date(value as Date).toLocaleDateString() : "-"),
+        },
+        {
+            key: "updatedAt",
+            header: "Last Updated",
+            sortable: true,
+            editable: false,
+            accessor: (task) => task.updatedAt,
+            sortValue: (task) => task.updatedAt.getTime(),
+            cell: (value) =>
+                (value as Date).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }),
+        },
+    ];
 
     return (
-        <div className="rounded-lg border h-full overflow-auto">
-            <table className="w-full caption-bottom text-sm relative">
-                <thead>
-                    <tr className="transition-colors hover:bg-muted/50">
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleSort("taskName")}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                Name
-                                {getSortIcon("taskName")}
-                            </Button>
-                        </th>
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleSort("status")}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                Status
-                                {getSortIcon("status")}
-                            </Button>
-                        </th>
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleSort("subType")}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                Subtype
-                                {getSortIcon("subType")}
-                            </Button>
-                        </th>
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleSort("taskDueTime")}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                Due Date
-                                {getSortIcon("taskDueTime")}
-                            </Button>
-                        </th>
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            <Button
-                                variant="ghost"
-                                onClick={() => handleSort("updatedAt")}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                Last Updated
-                                {getSortIcon("updatedAt")}
-                            </Button>
-                        </th>
-                        <th
-                            className="sticky top-0 z-10 bg-background h-10 px-2 text-right align-middle font-medium text-muted-foreground"
-                            style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
-                        >
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody className="[&_tr:last-child]:border-0">
-                    {sortedTasks.map((task) => (
-                        <tr
-                            key={task.taskId}
-                            className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
-                            onClick={() => openDrawer(task)}
-                        >
-                            <td className="p-2 align-middle font-medium">{task.taskName || "Untitled"}</td>
-                            <td className="p-2 align-middle">
-                                <Badge variant={getStatusColor(task.status || "")}>{task.status || "Unknown"}</Badge>
-                            </td>
-                            <td className="p-2 align-middle">
-                                <Badge variant="outline">{task.subType || "N/A"}</Badge>
-                            </td>
-                            <td className="p-2 align-middle">
-                                {task.taskDueTime ? new Date(task.taskDueTime).toLocaleDateString() : "-"}
-                            </td>
-                            <td className="p-2 align-middle">
-                                {task.updatedAt.toLocaleString(undefined, {
-                                    year: "numeric",
-                                    month: "numeric",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
-                            </td>
-                            <td className="p-2 align-middle text-right">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        openEditDialog(task);
-                                    }}
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <DataTable
+            data={tasks}
+            columns={columns}
+            getRowKey={(task) => task.taskId}
+            defaultSortKey="updatedAt"
+            defaultSortDirection="desc"
+            onCellEdit={handleCellEdit}
+            showDrawerColumn
+            onDrawerClick={openDrawer}
+            actionsColumn={(task) => (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDialog(task);
+                    }}
+                >
+                    <Edit className="h-4 w-4" />
+                </Button>
+            )}
+        />
     );
 }
