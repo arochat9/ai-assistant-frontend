@@ -7,7 +7,7 @@ import { useTaskDialog } from "../../contexts/TaskDialogContext";
 
 export function TaskDrawer() {
     const { isOpen, task, closeDrawer } = useTaskDrawer();
-    const { openEditDialog } = useTaskDialog();
+    const { openEditDialog, editTask } = useTaskDialog();
 
     if (!task) return null;
 
@@ -42,10 +42,16 @@ export function TaskDrawer() {
     };
 
     return (
-        <Sheet open={isOpen} onOpenChange={(open: boolean) => !open && closeDrawer()}>
+        <Sheet open={isOpen} onOpenChange={(open: boolean) => !open && !editTask && closeDrawer()} modal={false}>
             <SheetContent className="sm:max-w-md overflow-y-auto">
                 <SheetHeader className="border-b pb-4">
-                    <SheetTitle>Task Details</SheetTitle>
+                    <div className="flex items-center justify-between pr-8">
+                        <SheetTitle>Task Details</SheetTitle>
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(task)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                        </Button>
+                    </div>
                 </SheetHeader>
 
                 <div className="space-y-6 mt-6">
@@ -58,12 +64,6 @@ export function TaskDrawer() {
                             <Badge variant="outline">{task.taskOrEvent}</Badge>
                         </div>
                     </div>
-
-                    {/* Edit Button */}
-                    <Button variant="outline" onClick={() => openEditDialog(task)} className="w-full">
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Task
-                    </Button>
 
                     {/* Context/Description */}
                     {task.taskContext && (

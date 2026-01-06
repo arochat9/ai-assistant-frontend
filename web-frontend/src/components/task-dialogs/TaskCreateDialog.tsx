@@ -21,12 +21,27 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
         source: Source.USER,
     });
 
-    const handleChange = (field: string, value: string | string[]) => {
+    const handleChange = (field: string, value: string) => {
         if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
-            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value as string) : undefined }));
+            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value) : undefined }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
         }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const submitData: CreateTaskInput = {
+            ...formData,
+            tags:
+                typeof formData.tags === "string" && formData.tags
+                    ? (formData.tags as string)
+                          .split(",")
+                          .map((tag: string) => tag.trim())
+                          .filter(Boolean)
+                    : formData.tags,
+        };
+        onSubmit(submitData);
     };
 
     return (
@@ -36,13 +51,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
                     <DialogTitle>Create New Task</DialogTitle>
                     <DialogDescription>Add a new task or event to your list</DialogDescription>
                 </DialogHeader>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        onSubmit(formData);
-                    }}
-                    className="space-y-4"
-                >
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <TaskFormFields
                         values={{
                             ...formData,

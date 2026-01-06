@@ -15,9 +15,9 @@ interface TaskFormFieldsProps {
         eventEndTime?: string;
         plannedFor?: string;
         source?: string;
-        tags?: string[];
+        tags?: string;
     };
-    onChange: (field: string, value: string | string[]) => void;
+    onChange: (field: string, value: string) => void;
     showRequired?: boolean;
 }
 
@@ -131,17 +131,9 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                 <Label htmlFor="tags">Tags (comma-separated)</Label>
                 <Input
                     id="tags"
-                    value={values.tags?.join(", ") || ""}
-                    onChange={(e) =>
-                        onChange(
-                            "tags",
-                            e.target.value
-                                .split(",")
-                                .map((tag) => tag.trim())
-                                .filter(Boolean)
-                        )
-                    }
-                    placeholder="work, urgent, personal..."
+                    value={values.tags || ""}
+                    onChange={(e) => onChange("tags", e.target.value)}
+                    placeholder="work, urgent task, personal"
                     autoComplete="off"
                 />
             </div>

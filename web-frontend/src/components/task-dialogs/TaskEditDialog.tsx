@@ -24,7 +24,7 @@ type FormData = {
     eventEndTime?: Date;
     plannedFor?: PlannedFor;
     source?: Source;
-    tags?: string[];
+    tags?: string;
 };
 
 export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }: TaskEditDialogProps) {
@@ -39,7 +39,7 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
         eventEndTime: task.eventEndTime ? new Date(task.eventEndTime) : undefined,
         plannedFor: task.plannedFor,
         source: task.source,
-        tags: task.tags,
+        tags: task.tags?.join(", ") || "",
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -48,14 +48,20 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
         const updateData: UpdateTaskInput = {
             ...formData,
             taskId: task.taskId,
+            tags: formData.tags
+                ? formData.tags
+                      .split(",")
+                      .map((tag) => tag.trim())
+                      .filter(Boolean)
+                : undefined,
         };
 
         onSubmit(updateData);
     };
 
-    const handleChange = (field: string, value: string | string[]) => {
+    const handleChange = (field: string, value: string) => {
         if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
-            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value as string) : undefined }));
+            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value) : undefined }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
         }
