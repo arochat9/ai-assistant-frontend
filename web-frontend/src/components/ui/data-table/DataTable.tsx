@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Button } from "../button";
 import { TableHeader } from "./TableHeader";
@@ -25,6 +26,10 @@ export function DataTable<T>({
     actionsColumnWidth = "60px",
     groupBy,
     groupHeader,
+    allGroups,
+    draggable = false,
+    onDragStart,
+    onGroupDrop,
 }: DataTableProps<T>) {
     const { sortKey, sortDirection, handleSort, sortedData } = useTableSort(
         data,
@@ -37,14 +42,21 @@ export function DataTable<T>({
     );
 
     const { editValue, setEditValue, startEdit, cancelEdit, isEditing } = useTableEdit<T>();
+    const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
     const groupedData = groupBy
-        ? sortedData.reduce((acc, row) => {
-              const group = groupBy(row) || "Ungrouped";
-              if (!acc[group]) acc[group] = [];
-              acc[group].push(row);
-              return acc;
-          }, {} as Record<string, T[]>)
+        ? sortedData.reduce(
+              (acc, row) => {
+                  const group = groupBy(row) || "Ungrouped";
+                  if (!acc[group]) acc[group] = [];
+                  acc[group].push(row);
+                  return acc;
+              },
+              {
+                  // Initialize with all groups if provided
+                  ...(allGroups ? Object.fromEntries(allGroups.map((g) => [g, []])) : {}),
+              } as Record<string, T[]>
+          )
         : { All: sortedData };
 
     const totalColumns = columns.length + (showDrawerColumn ? 1 : 0) + (actionsColumn ? 1 : 0);
@@ -66,10 +78,27 @@ export function DataTable<T>({
                     {Object.entries(groupedData).map(([groupValue, rows]) => (
                         <>
                             {groupBy && groupHeader && groupValue !== "All" && (
-                                <tr key={`group-${groupValue}`}>
+                                <tr
+                                    key={`group-${groupValue}`}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.dataTransfer.dropEffect = "move";
+                                        setHoveredGroup(groupValue);
+                                    }}
+                                    onDragLeave={() => setHoveredGroup(null)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setHoveredGroup(null);
+                                        onGroupDrop?.(groupValue === "Ungrouped" ? undefined : groupValue);
+                                    }}
+                                >
                                     <td
                                         colSpan={totalColumns}
-                                        className="px-3 py-1.5 bg-muted/50 font-semibold text-xs uppercase tracking-wide text-foreground border-b-2 border-border"
+                                        className={`px-3 py-1.5 font-semibold text-xs uppercase tracking-wide text-foreground border-b-2 border-border transition-colors ${
+                                            hoveredGroup === groupValue ? "bg-primary/20" : "bg-muted/50 hover:bg-muted"
+                                        }`}
                                     >
                                         {groupHeader(groupValue === "Ungrouped" ? undefined : groupValue)}
                                     </td>
@@ -83,9 +112,39 @@ export function DataTable<T>({
                                 return (
                                     <tr
                                         key={rowKey}
-                                        className={`border-b transition-colors hover:bg-muted/50 ${
-                                            isRowCompleted ? "opacity-50" : ""
-                                        }`}
+                                        draggable={draggable}
+                                        onDragStart={(e) => {
+                                            console.log("Drag start", row);
+                                            if (draggable && onDragStart) {
+                                                e.dataTransfer.effectAllowed = "move";
+                                                onDragStart(row);
+                                            }
+                                        }}
+                                        onDragOver={(e) => {
+                                            if (onGroupDrop) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.dataTransfer.dropEffect = "move";
+                                                setHoveredGroup(groupValue);
+                                            }
+                                        }}
+                                        onDragLeave={() => {
+                                            if (onGroupDrop) {
+                                                setHoveredGroup(null);
+                                            }
+                                        }}
+                                        onDrop={(e) => {
+                                            if (onGroupDrop) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setHoveredGroup(null);
+                                                console.log("Row drop - groupValue:", groupValue);
+                                                onGroupDrop(groupValue === "Ungrouped" ? undefined : groupValue);
+                                            }
+                                        }}
+                                        className={`border-b transition-colors ${
+                                            hoveredGroup === groupValue ? "bg-primary/10" : "hover:bg-muted/50"
+                                        } ${isRowCompleted ? "opacity-50" : ""} ${draggable ? "cursor-move" : ""}`}
                                     >
                                         {columns.map((column) => {
                                             if (column.editType === "checkbox") {

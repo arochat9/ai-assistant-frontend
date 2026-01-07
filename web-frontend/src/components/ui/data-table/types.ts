@@ -33,4 +33,8 @@ export interface DataTableProps<T> {
     actionsColumnWidth?: string;
     groupBy?: (row: T) => string | undefined;
     groupHeader?: (groupValue: string | undefined) => ReactNode;
+    allGroups?: string[];
+    draggable?: boolean;
+    onDragStart?: (row: T) => void;
+    onGroupDrop?: (groupValue: string | undefined) => void;
 }
