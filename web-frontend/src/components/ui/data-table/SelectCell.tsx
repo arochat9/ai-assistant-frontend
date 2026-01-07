@@ -16,7 +16,7 @@ export function SelectCell<T>({ row, column, onCellEdit, options }: SelectCellPr
     };
 
     return (
-        <td className="p-2 align-middle" style={column.width ? { width: column.width } : undefined}>
+        <td className="px-1 py-3 align-middle" style={column.width ? { width: column.width } : undefined}>
             {column.cell ? (
                 <div className="relative">
                     <div className="pointer-events-none">{column.cell(value, row, false, () => {})}</div>

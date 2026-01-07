@@ -67,7 +67,7 @@ export function TableCell<T>({
 
     return (
         <td
-            className="p-2 align-middle"
+            className="px-1 py-3 align-middle"
             onClick={handleClick}
             style={{
                 cursor: column.editable && onCellEdit ? "pointer" : undefined,
@@ -82,7 +82,7 @@ export function TableCell<T>({
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
                     autoFocus
-                    className="w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-2 py-0 border rounded focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                     onClick={(e) => e.stopPropagation()}
                 />
             ) : column.cell ? (

@@ -42,7 +42,7 @@ export function TasksTable({ tasks, sortKey, sortDirection, onSortChange }: Task
     const columns: ColumnDef<Task>[] = [
         {
             key: "status",
-            header: "S",
+            header: "",
             width: "40px",
             sortable: true,
             editable: true,

@@ -36,7 +36,7 @@ export function TableHeader<T>({
                 {columns.map((column) => (
                     <th
                         key={column.key}
-                        className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
+                        className="sticky top-0 z-10 bg-background h-10 px-1 text-left align-middle font-medium text-muted-foreground"
                         style={{
                             boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
                             ...(column.width ? { width: column.width } : {}),
@@ -58,13 +58,13 @@ export function TableHeader<T>({
                 ))}
                 {showDrawerColumn && (
                     <th
-                        className="sticky top-0 z-10 bg-background h-10 px-2 text-center align-middle font-medium text-muted-foreground"
+                        className="sticky top-0 z-10 bg-background h-10 p-0 text-center align-middle font-medium text-muted-foreground"
                         style={{
                             boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
                             width: drawerColumnWidth,
                         }}
                     >
-                        <span className="font-semibold">View</span>
+                        <span className="font-semibold"></span>
                     </th>
                 )}
                 {hasActionsColumn && (
