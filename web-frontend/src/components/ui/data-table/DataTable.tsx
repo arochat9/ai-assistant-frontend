@@ -13,17 +13,25 @@ export function DataTable<T>({
     getRowKey,
     defaultSortKey,
     defaultSortDirection = "desc",
+    sortKey: controlledSortKey,
+    sortDirection: controlledSortDirection,
+    onSortChange,
     onRowClick,
     onCellEdit,
     showDrawerColumn = false,
+    drawerColumnWidth = "60px",
     onDrawerClick,
     actionsColumn,
+    actionsColumnWidth = "60px",
 }: DataTableProps<T>) {
     const { sortKey, sortDirection, handleSort, sortedData } = useTableSort(
         data,
         columns,
         defaultSortKey,
-        defaultSortDirection
+        defaultSortDirection,
+        controlledSortKey,
+        controlledSortDirection,
+        onSortChange
     );
 
     const { editValue, setEditValue, startEdit, cancelEdit, isEditing } = useTableEdit<T>();
@@ -37,7 +45,9 @@ export function DataTable<T>({
                     sortDirection={sortDirection}
                     onSort={handleSort}
                     showDrawerColumn={showDrawerColumn}
+                    drawerColumnWidth={drawerColumnWidth}
                     hasActionsColumn={!!actionsColumn}
+                    actionsColumnWidth={actionsColumnWidth}
                 />
                 <tbody className="[&_tr:last-child]:border-0">
                     {sortedData.map((row) => {
@@ -55,7 +65,11 @@ export function DataTable<T>({
                                 {columns.map((column) => {
                                     if (column.editType === "checkbox") {
                                         return (
-                                            <td key={column.key} className="p-2 align-middle">
+                                            <td
+                                                key={column.key}
+                                                className="p-2 align-middle"
+                                                style={column.width ? { width: column.width } : undefined}
+                                            >
                                                 <CheckboxCell
                                                     status={column.accessor(row) as "Open" | "Closed" | "Backlogged"}
                                                     onToggle={() => {
@@ -102,7 +116,7 @@ export function DataTable<T>({
                                     );
                                 })}
                                 {showDrawerColumn && (
-                                    <td className="p-2 align-middle text-center">
+                                    <td className="p-2 align-middle text-center" style={{ width: drawerColumnWidth }}>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -115,7 +129,11 @@ export function DataTable<T>({
                                         </Button>
                                     </td>
                                 )}
-                                {actionsColumn && <td className="p-2 align-middle text-right">{actionsColumn(row)}</td>}
+                                {actionsColumn && (
+                                    <td className="p-2 align-middle text-right" style={{ width: actionsColumnWidth }}>
+                                        {actionsColumn(row)}
+                                    </td>
+                                )}
                             </tr>
                         );
                     })}

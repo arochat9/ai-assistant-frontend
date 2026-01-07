@@ -5,17 +5,25 @@ export function useTableSort<T>(
     data: T[],
     columns: ColumnDef<T>[],
     defaultSortKey?: string,
-    defaultSortDirection: "asc" | "desc" = "desc"
+    defaultSortDirection: "asc" | "desc" = "desc",
+    controlledSortKey?: string,
+    controlledSortDirection?: "asc" | "desc",
+    onSortChange?: (key: string, direction: "asc" | "desc") => void
 ) {
-    const [sortKey, setSortKey] = useState<string | undefined>(defaultSortKey);
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">(defaultSortDirection);
+    const [internalSortKey, setInternalSortKey] = useState<string | undefined>(defaultSortKey);
+    const [internalSortDirection, setInternalSortDirection] = useState<"asc" | "desc">(defaultSortDirection);
+
+    const sortKey = controlledSortKey ?? internalSortKey;
+    const sortDirection = controlledSortDirection ?? internalSortDirection;
 
     const handleSort = (columnKey: string) => {
-        if (sortKey === columnKey) {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        const newDirection = sortKey === columnKey && sortDirection === "asc" ? "desc" : "asc";
+
+        if (onSortChange) {
+            onSortChange(columnKey, newDirection);
         } else {
-            setSortKey(columnKey);
-            setSortDirection("asc");
+            setInternalSortKey(columnKey);
+            setInternalSortDirection(newDirection);
         }
     };
 

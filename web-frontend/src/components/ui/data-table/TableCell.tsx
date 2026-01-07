@@ -69,7 +69,10 @@ export function TableCell<T>({
         <td
             className="p-2 align-middle"
             onClick={handleClick}
-            style={{ cursor: column.editable && onCellEdit ? "pointer" : undefined }}
+            style={{
+                cursor: column.editable && onCellEdit ? "pointer" : undefined,
+                ...(column.width ? { width: column.width } : {}),
+            }}
         >
             {isEditing ? (
                 <input

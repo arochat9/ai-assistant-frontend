@@ -1,5 +1,6 @@
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Select } from "../ui/select";
 import { TaskStatus, SubType } from "shared";
 import type { TaskFilters as TaskFiltersType } from "shared";
 
@@ -7,9 +8,19 @@ interface TaskFiltersProps {
     filters: TaskFiltersType;
     onFilterChange: (key: keyof TaskFiltersType, value: string) => void;
     onClearFilters: () => void;
+    sortKey?: string;
+    sortDirection?: "asc" | "desc";
+    onSortChange?: (key: string, direction: "asc" | "desc") => void;
 }
 
-export function TaskFilters({ filters, onFilterChange, onClearFilters }: TaskFiltersProps) {
+export function TaskFilters({
+    filters,
+    onFilterChange,
+    onClearFilters,
+    sortKey = "updatedAt",
+    sortDirection = "desc",
+    onSortChange,
+}: TaskFiltersProps) {
     const statusOptions = [
         { value: "", label: "All" },
         { value: TaskStatus.OPEN, label: "Open" },
@@ -23,6 +34,16 @@ export function TaskFilters({ filters, onFilterChange, onClearFilters }: TaskFil
         { value: SubType.TEXT_RESPONSE, label: "Text" },
         { value: SubType.CHORE, label: "Chore" },
         { value: SubType.ERRAND, label: "Errand" },
+    ];
+
+    const sortOptions = [
+        { value: "taskName", label: "Name" },
+        { value: "status", label: "Status" },
+        { value: "subType", label: "Type" },
+        { value: "taskDueTime", label: "Due Date" },
+        { value: "updatedAt", label: "Last Updated" },
+        { value: "createdAt", label: "Created" },
+        { value: "plannedFor", label: "Planned For" },
     ];
 
     return (
@@ -80,6 +101,31 @@ export function TaskFilters({ filters, onFilterChange, onClearFilters }: TaskFil
                         onChange={(e) => onFilterChange("updatedAfter", e.target.value)}
                         className="h-7 w-36 text-sm"
                     />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Sort By</span>
+                    <div className="flex items-center gap-1">
+                        <Select
+                            value={sortKey}
+                            onChange={(e) => onSortChange?.(e.target.value, sortDirection)}
+                            className="h-7 w-32 text-sm"
+                        >
+                            {sortOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onSortChange?.(sortKey, sortDirection === "asc" ? "desc" : "asc")}
+                            className="h-7 px-2 text-xs"
+                        >
+                            {sortDirection === "asc" ? "↑" : "↓"}
+                        </Button>
+                    </div>
                 </div>
 
                 <Button variant="ghost" size="sm" onClick={onClearFilters} className="h-7 px-2 text-xs ml-auto">

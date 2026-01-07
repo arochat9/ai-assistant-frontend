@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 export interface ColumnDef<T> {
     key: string;
     header: string;
+    width?: string;
     sortable?: boolean;
     editable?: boolean;
     editType?: "text" | "select" | "checkbox";
@@ -20,9 +21,14 @@ export interface DataTableProps<T> {
     getRowKey: (row: T) => string;
     defaultSortKey?: string;
     defaultSortDirection?: "asc" | "desc";
+    sortKey?: string;
+    sortDirection?: "asc" | "desc";
+    onSortChange?: (key: string, direction: "asc" | "desc") => void;
     onRowClick?: (row: T) => void;
     onCellEdit?: (row: T, columnKey: string, newValue: unknown) => void | Promise<void>;
     showDrawerColumn?: boolean;
+    drawerColumnWidth?: string;
     onDrawerClick?: (row: T) => void;
     actionsColumn?: (row: T) => ReactNode;
+    actionsColumnWidth?: string;
 }

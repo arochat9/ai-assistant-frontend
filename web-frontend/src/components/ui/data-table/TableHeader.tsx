@@ -8,7 +8,9 @@ interface TableHeaderProps<T> {
     sortDirection: "asc" | "desc";
     onSort: (columnKey: string) => void;
     showDrawerColumn?: boolean;
+    drawerColumnWidth?: string;
     hasActionsColumn?: boolean;
+    actionsColumnWidth?: string;
 }
 
 export function TableHeader<T>({
@@ -17,7 +19,9 @@ export function TableHeader<T>({
     sortDirection,
     onSort,
     showDrawerColumn,
+    drawerColumnWidth = "60px",
     hasActionsColumn,
+    actionsColumnWidth = "60px",
 }: TableHeaderProps<T>) {
     const getSortIcon = (columnKey: string) => {
         if (sortKey !== columnKey) {
@@ -33,7 +37,10 @@ export function TableHeader<T>({
                     <th
                         key={column.key}
                         className="sticky top-0 z-10 bg-background h-10 px-2 text-left align-middle font-medium text-muted-foreground"
-                        style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
+                        style={{
+                            boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
+                            ...(column.width ? { width: column.width } : {}),
+                        }}
                     >
                         {column.sortable ? (
                             <Button
@@ -52,7 +59,10 @@ export function TableHeader<T>({
                 {showDrawerColumn && (
                     <th
                         className="sticky top-0 z-10 bg-background h-10 px-2 text-center align-middle font-medium text-muted-foreground"
-                        style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
+                        style={{
+                            boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
+                            width: drawerColumnWidth,
+                        }}
                     >
                         <span className="font-semibold">View</span>
                     </th>
@@ -60,7 +70,10 @@ export function TableHeader<T>({
                 {hasActionsColumn && (
                     <th
                         className="sticky top-0 z-10 bg-background h-10 px-2 text-right align-middle font-medium text-muted-foreground"
-                        style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
+                        style={{
+                            boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
+                            width: actionsColumnWidth,
+                        }}
                     >
                         <span className="font-semibold">Actions</span>
                     </th>

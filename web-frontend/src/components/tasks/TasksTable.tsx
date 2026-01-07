@@ -10,9 +10,12 @@ import type { Task, TaskStatus, SubType, PlannedFor } from "shared";
 
 interface TasksTableProps {
     tasks: Task[];
+    sortKey?: string;
+    sortDirection?: "asc" | "desc";
+    onSortChange?: (key: string, direction: "asc" | "desc") => void;
 }
 
-export function TasksTable({ tasks }: TasksTableProps) {
+export function TasksTable({ tasks, sortKey, sortDirection, onSortChange }: TasksTableProps) {
     const { openDrawer } = useTaskDrawer();
     const { openEditDialog } = useTaskDialog();
     const { updateMutation } = useTaskMutations({});
@@ -38,6 +41,15 @@ export function TasksTable({ tasks }: TasksTableProps) {
 
     const columns: ColumnDef<Task>[] = [
         {
+            key: "status",
+            header: "S",
+            width: "40px",
+            sortable: true,
+            editable: true,
+            editType: "checkbox",
+            accessor: (task) => task.status,
+        },
+        {
             key: "taskName",
             header: "Name",
             sortable: true,
@@ -47,16 +59,9 @@ export function TasksTable({ tasks }: TasksTableProps) {
             cell: (value) => <span className="font-medium">{(value as string) || "Untitled"}</span>,
         },
         {
-            key: "status",
-            header: "Status",
-            sortable: true,
-            editable: true,
-            editType: "checkbox",
-            accessor: (task) => task.status,
-        },
-        {
             key: "subType",
             header: "Subtype",
+            width: "130px",
             sortable: true,
             editable: true,
             editType: "select",
@@ -74,8 +79,26 @@ export function TasksTable({ tasks }: TasksTableProps) {
             cell: (value) => (value ? new Date(value as Date).toLocaleDateString() : "-"),
         },
         {
+            key: "createdAt",
+            header: "Created",
+            width: "160px",
+            sortable: true,
+            editable: false,
+            accessor: (task) => task.createdAt,
+            sortValue: (task) => task.createdAt.getTime(),
+            cell: (value) =>
+                (value as Date).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }),
+        },
+        {
             key: "updatedAt",
             header: "Last Updated",
+            width: "160px",
             sortable: true,
             editable: false,
             accessor: (task) => task.updatedAt,
@@ -96,10 +119,14 @@ export function TasksTable({ tasks }: TasksTableProps) {
             data={tasks}
             columns={columns}
             getRowKey={(task) => task.taskId}
-            defaultSortKey="updatedAt"
+            defaultSortKey="createdAt"
             defaultSortDirection="desc"
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSortChange={onSortChange}
             onCellEdit={handleCellEdit}
             showDrawerColumn
+            drawerColumnWidth="60px"
             onDrawerClick={openDrawer}
             actionsColumn={(task) => (
                 <Button
@@ -113,6 +140,7 @@ export function TasksTable({ tasks }: TasksTableProps) {
                     <Edit className="h-4 w-4" />
                 </Button>
             )}
+            actionsColumnWidth="60px"
         />
     );
 }

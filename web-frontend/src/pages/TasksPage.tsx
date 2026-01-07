@@ -12,6 +12,8 @@ import type { TaskFilters as TaskFiltersType } from "shared";
 
 export function TasksPage() {
     const [filters, setFilters] = useState<TaskFiltersType>({});
+    const [sortKey, setSortKey] = useState<string>("createdAt");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
     const { openCreateDialog } = useTaskDialog();
 
     const { data, isLoading, error } = useQuery({
@@ -21,6 +23,11 @@ export function TasksPage() {
 
     const handleFilterChange = useCallback((key: keyof TaskFiltersType, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value || undefined }));
+    }, []);
+
+    const handleSortChange = useCallback((key: string, direction: "asc" | "desc") => {
+        setSortKey(key);
+        setSortDirection(direction);
     }, []);
 
     const clearFilters = useCallback(() => setFilters({}), []);
@@ -38,7 +45,14 @@ export function TasksPage() {
                 </Button>
             </div>
 
-            <TaskFilters filters={filters} onFilterChange={handleFilterChange} onClearFilters={clearFilters} />
+            <TaskFilters
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onClearFilters={clearFilters}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSortChange={handleSortChange}
+            />
 
             {isLoading ? (
                 <div className="flex h-64 items-center justify-center">
@@ -52,7 +66,12 @@ export function TasksPage() {
                 <EmptyState onCreateTask={openCreateDialog} />
             ) : (
                 <div className="flex-1 min-h-0">
-                    <TasksTable tasks={data.tasks} />
+                    <TasksTable
+                        tasks={data.tasks}
+                        sortKey={sortKey}
+                        sortDirection={sortDirection}
+                        onSortChange={handleSortChange}
+                    />
                 </div>
             )}
         </div>
