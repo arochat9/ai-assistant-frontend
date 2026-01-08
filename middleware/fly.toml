@@ -1,9 +1,7 @@
-app = "your-app-name-here"
+app = "ai-assistant-frontend"
 
 [build]
   dockerfile = "Dockerfile"
-  [build.args]
-    FOUNDRY_TOKEN = "$FOUNDRY_TOKEN"
 
 [env]
   PORT = "3000"
