@@ -1,7 +1,7 @@
 app = "your-app-name-here"
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "middleware/Dockerfile"
 
 [env]
   PORT = "3000"
