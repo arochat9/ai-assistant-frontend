@@ -2,8 +2,8 @@ app = "your-app-name-here"
 
 [build]
   dockerfile = "Dockerfile"
-  [build.secrets]
-    FOUNDRY_TOKEN = "secret:FOUNDRY_TOKEN"
+  [build.args]
+    FOUNDRY_TOKEN = "$FOUNDRY_TOKEN"
 
 [env]
   PORT = "3000"
