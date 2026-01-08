@@ -7,7 +7,7 @@ import tasksRoutes from "./routes/tasks.routes";
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Middleware
 app.use(cors());
@@ -31,6 +31,6 @@ app.get("*", (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`Middleware server is running on port ${PORT}`);
 });
