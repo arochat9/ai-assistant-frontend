@@ -2,7 +2,7 @@ app = "your-app-name-here"
 
 [build]
   dockerfile = "Dockerfile"
-  [build.args]
+  [build.secrets]
     FOUNDRY_TOKEN = "secret:FOUNDRY_TOKEN"
 
 [env]
