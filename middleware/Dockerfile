@@ -13,8 +13,7 @@ COPY shared/ ../shared/
 RUN cd ../shared && npm run build
 
 # Copy and install frontend (this will link to built shared package)
-COPY web-frontend/package*.json ../web-frontend/
-COPY web-frontend/package-lock.json ../web-frontend/ 2>/dev/null || true
+COPY web-frontend/package*.json web-frontend/package-lock.json ../web-frontend/
 RUN cd ../web-frontend && npm ci
 
 # Copy and build frontend
