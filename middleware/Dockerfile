@@ -8,13 +8,16 @@ COPY shared/.npmrc ../shared/
 RUN --mount=type=secret,id=FOUNDRY_TOKEN \
     FOUNDRY_TOKEN="$(cat /run/secrets/FOUNDRY_TOKEN)" npm ci --prefix ../shared
 
-# Copy shared source and build it
+# Copy shared source and build it BEFORE web-frontend install
 COPY shared/ ../shared/
 RUN cd ../shared && npm run build
 
-# Copy and build frontend
+# Copy and install frontend (this will link to built shared package)
 COPY web-frontend/package*.json ../web-frontend/
+COPY web-frontend/package-lock.json ../web-frontend/ 2>/dev/null || true
 RUN cd ../web-frontend && npm ci
+
+# Copy and build frontend
 COPY web-frontend/ ../web-frontend/
 RUN cd ../web-frontend && npm run build
 
