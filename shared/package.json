@@ -2,9 +2,11 @@
     "name": "shared",
     "version": "1.0.0",
     "description": "Shared types and schemas for AI Assistant project",
-    "main": "index.ts",
+    "main": "index.js",
     "types": "index.ts",
-    "scripts": {},
+    "scripts": {
+        "build": "tsc"
+    },
     "keywords": [],
     "author": "",
     "license": "ISC",

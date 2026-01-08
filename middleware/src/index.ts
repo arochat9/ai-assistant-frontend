@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import tasksRoutes from "./routes/tasks.routes";
 
 dotenv.config();
@@ -13,17 +14,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.get("/", (req, res) => {
-    res.json({ message: "Middleware server is running" });
-});
-
+// Health check
 app.get("/health", (req, res) => {
     res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// API Routes
+// API Routes (must come before static file serving)
 app.use("/api/tasks", tasksRoutes);
+
+// Serve static files from the Vite build
+app.use(express.static(path.join(__dirname, "../../web-frontend/dist")));
+
+// Handle client-side routing - send all other requests to React app
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../../web-frontend/dist/index.html"));
+});
 
 // Start server
 app.listen(PORT, () => {
