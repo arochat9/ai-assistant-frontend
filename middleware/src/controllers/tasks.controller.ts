@@ -26,10 +26,13 @@ export async function getTasks(req: Request, res: Response) {
     try {
         const filters: TaskFilters = req.body;
 
-        const whereConditions: Array<Record<string, unknown>> = [
-            { environment: { $eq: Environment.PRODUCTION } },
-            { taskOrEvent: { $eq: "Task" } },
-        ];
+        console.log("Received task fetch request with filters:", filters);
+
+        const whereConditions: Array<Record<string, unknown>> = [{ environment: { $eq: Environment.PRODUCTION } }];
+
+        if (filters.taskOrEvent) {
+            whereConditions.push({ taskOrEvent: { $eq: filters.taskOrEvent } });
+        }
 
         if (filters.status) {
             whereConditions.push({ status: { $eq: filters.status } });
@@ -49,7 +52,23 @@ export async function getTasks(req: Request, res: Response) {
         }
 
         if (filters.updatedAfter) {
-            whereConditions.push({ updatedAt: { $gte: filters.updatedAfter.toISOString() } });
+            whereConditions.push({ updatedAt: { $gte: filters.updatedAfter } });
+        }
+
+        if (filters.eventStartAfter) {
+            whereConditions.push({ eventStartTime: { $gte: filters.eventStartAfter } });
+        }
+
+        if (filters.eventStartBefore) {
+            whereConditions.push({ eventStartTime: { $lte: filters.eventStartBefore } });
+        }
+
+        if (filters.eventEndAfter) {
+            whereConditions.push({ eventEndTime: { $gte: filters.eventEndAfter } });
+        }
+
+        if (filters.eventEndBefore) {
+            whereConditions.push({ eventEndTime: { $lte: filters.eventEndBefore } });
         }
 
         // Fetch tasks from Foundry (always filtered to prod environment)
@@ -139,14 +158,14 @@ export async function createNewTask(req: Request, res: Response) {
         // Fetch the created task using the primary key from the action response
         const createdTaskRef = result.addedObjects[0];
         const osdkTask = await client(OsdkTask).fetchOne(createdTaskRef.primaryKey as string);
-        
+
         if (!osdkTask) {
             return res.status(500).json({
                 error: "Failed to fetch created task",
                 details: "Task was created but could not be retrieved",
             });
         }
-        
+
         const task = convertOsdkTaskToTask(osdkTask);
         return res.status(201).json({ success: true, task });
     } catch (error) {
@@ -193,14 +212,14 @@ export async function updateExistingTask(req: Request, res: Response) {
         // Fetch the updated task using the primary key from the action response
         const updatedTaskRef = result.modifiedObjects[0];
         const osdkTask = await client(OsdkTask).fetchOne(updatedTaskRef.primaryKey as string);
-        
+
         if (!osdkTask) {
             return res.status(500).json({
                 error: "Failed to fetch updated task",
                 details: "Task was updated but could not be retrieved",
             });
         }
-        
+
         const task = convertOsdkTaskToTask(osdkTask);
         return res.json({ success: true, task });
     } catch (error) {

@@ -28,8 +28,13 @@ export interface Task {
 export const TaskFiltersSchema = z.object({
     status: z.nativeEnum(TaskStatus).optional(),
     subType: z.nativeEnum(SubType).optional(),
+    taskOrEvent: z.nativeEnum(TaskOrEvent).optional(),
     keyword: z.string().optional(),
     updatedAfter: z.date().optional(),
+    eventStartAfter: z.date().optional(),
+    eventStartBefore: z.date().optional(),
+    eventEndAfter: z.date().optional(),
+    eventEndBefore: z.date().optional(),
 });
 
 export type TaskFilters = z.infer<typeof TaskFiltersSchema>;

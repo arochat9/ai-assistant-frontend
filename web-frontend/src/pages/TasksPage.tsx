@@ -7,8 +7,8 @@ import { TaskFilters } from "../components/tasks/TaskFilters";
 import { TasksTable } from "../components/tasks/TasksTable";
 import { EmptyState } from "../components/tasks/EmptyState";
 import { useTaskDialog } from "../contexts/TaskDialogContext";
+import { TaskOrEvent } from "shared";
 import type { TaskFilters as TaskFiltersType } from "shared";
-// import { TaskStatus } from "shared";
 
 export function TasksPage() {
     const [filters, setFilters] = useState<TaskFiltersType>({});
@@ -18,7 +18,7 @@ export function TasksPage() {
 
     const { data, isLoading, error } = useQuery({
         queryKey: ["tasks", filters],
-        queryFn: () => tasksApi.getTasks(filters),
+        queryFn: () => tasksApi.getTasks({ ...filters, taskOrEvent: TaskOrEvent.TASK }),
     });
 
     const handleFilterChange = useCallback((key: keyof TaskFiltersType, value: string) => {

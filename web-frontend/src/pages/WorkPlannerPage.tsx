@@ -4,7 +4,7 @@ import { tasksApi } from "../services/api";
 import { DataTable, type ColumnDef } from "../components/ui/data-table";
 import { useTaskDrawer } from "../contexts/TaskDrawerContext";
 import { useTaskMutations } from "../hooks/useTaskMutations";
-import { PlannedFor } from "shared";
+import { PlannedFor, TaskOrEvent } from "shared";
 import type { Task, TaskStatus } from "shared";
 
 interface PlannerTableProps {
@@ -138,7 +138,7 @@ function PlannerTable({
 export function WorkPlannerPage() {
     const { data, isLoading, error } = useQuery({
         queryKey: ["tasks"],
-        queryFn: () => tasksApi.getTasks({}),
+        queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK }),
     });
     const { updateMutation } = useTaskMutations({});
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
