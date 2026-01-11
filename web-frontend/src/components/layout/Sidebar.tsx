@@ -60,9 +60,7 @@ export function Sidebar() {
                                 to={item.href}
                                 className={({ isActive }) =>
                                     `flex items-center rounded-lg text-sm font-medium transition-colors ${
-                                        isCollapsed 
-                                            ? "justify-center p-2" 
-                                            : "gap-3 px-3 py-2"
+                                        isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
                                     } ${
                                         isActive
                                             ? "bg-gray-900 text-white"
