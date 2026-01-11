@@ -46,6 +46,7 @@ export enum PlannedFor {
 export enum Source {
     AGENT = "Agent",
     USER = "User",
+    GOOGLE_CALENDAR = "Google Calendar",
 }
 
 // Helper functions to get enum values as arrays
