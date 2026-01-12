@@ -1,7 +1,7 @@
 import { Input } from "../ui/input";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
-import { TaskStatus, TaskOrEvent, SubType, PlannedFor, Source } from "shared";
+import { TaskStatus, TaskOrEvent, SubType, PlannedFor, Source, EventApprovalStatus } from "shared";
 
 interface TaskFormFieldsProps {
     values: {
@@ -13,6 +13,7 @@ interface TaskFormFieldsProps {
         taskDueTime?: string;
         eventStartTime?: string;
         eventEndTime?: string;
+        eventApprovalStatus?: string;
         plannedFor?: string;
         source?: string;
         tags?: string;
@@ -149,26 +150,43 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
             </div>
 
             {isEvent && (
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <Label htmlFor="eventStartTime">Event Start</Label>
-                        <Input
-                            id="eventStartTime"
-                            type="datetime-local"
-                            value={values.eventStartTime || ""}
-                            onChange={(e) => onChange("eventStartTime", e.target.value)}
-                        />
+                <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <Label htmlFor="eventStartTime">Event Start</Label>
+                            <Input
+                                id="eventStartTime"
+                                type="datetime-local"
+                                value={values.eventStartTime || ""}
+                                onChange={(e) => onChange("eventStartTime", e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="eventEndTime">Event End</Label>
+                            <Input
+                                id="eventEndTime"
+                                type="datetime-local"
+                                value={values.eventEndTime || ""}
+                                onChange={(e) => onChange("eventEndTime", e.target.value)}
+                            />
+                        </div>
                     </div>
                     <div>
-                        <Label htmlFor="eventEndTime">Event End</Label>
-                        <Input
-                            id="eventEndTime"
-                            type="datetime-local"
-                            value={values.eventEndTime || ""}
-                            onChange={(e) => onChange("eventEndTime", e.target.value)}
-                        />
+                        <Label htmlFor="eventApprovalStatus">Approval Status</Label>
+                        <Select
+                            id="eventApprovalStatus"
+                            value={values.eventApprovalStatus || ""}
+                            onChange={(e) => onChange("eventApprovalStatus", e.target.value)}
+                        >
+                            <option value="">Select status...</option>
+                            {Object.values(EventApprovalStatus).map((status) => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </Select>
                     </div>
-                </div>
+                </>
             )}
         </>
     );

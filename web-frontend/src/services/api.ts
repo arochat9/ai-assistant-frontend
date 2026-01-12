@@ -61,3 +61,21 @@ export const tasksApi = {
         return response.data;
     },
 };
+
+// Agent API
+export interface ChatMessage {
+    role: "user" | "assistant" | "system";
+    content: string;
+}
+
+export interface ChatResponse {
+    message: string;
+    role: string;
+}
+
+export const agentApi = {
+    chat: async (messages: ChatMessage[]): Promise<ChatResponse> => {
+        const response = await api.post<ChatResponse>("/api/agent/chat", { messages });
+        return response.data;
+    },
+};

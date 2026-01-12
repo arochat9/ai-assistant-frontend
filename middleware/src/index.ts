@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import tasksRoutes from "./routes/tasks.routes";
+import agentRoutes from "./routes/agent.routes";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get("/health", (req, res) => {
 
 // API Routes (must come before static file serving)
 app.use("/api/tasks", tasksRoutes);
+app.use("/api/agent", agentRoutes);
 
 // Serve static files from the Vite build
 app.use(express.static(path.join(__dirname, "../../web-frontend/dist")));

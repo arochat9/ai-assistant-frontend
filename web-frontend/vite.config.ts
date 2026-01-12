@@ -10,4 +10,15 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    optimizeDeps: {
+        include: ["ai", "ai/react"],
+    },
+    server: {
+        proxy: {
+            "/api": {
+                target: "http://localhost:3000",
+                changeOrigin: true,
+            },
+        },
+    },
 });

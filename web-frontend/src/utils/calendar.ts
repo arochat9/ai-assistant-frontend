@@ -142,10 +142,10 @@ export function isInMonth(date: Date, monthDate: Date): boolean {
 }
 
 /**
- * Filter events for a specific day
+ * Filter events for a specific day and sort them with canceled events at the bottom
  */
 export function getEventsForDay(events: CalendarEvent[], day: Date): CalendarEvent[] {
-    return events.filter((event) => {
+    const filteredEvents = events.filter((event) => {
         // For all-day events, use UTC date to avoid timezone issues
         if (event.isAllDay) {
             const eventStartUTC = new Date(
@@ -172,6 +172,16 @@ export function getEventsForDay(events: CalendarEvent[], day: Date): CalendarEve
         dayEnd.setHours(23, 59, 59, 999);
 
         return eventStart <= dayEnd && eventEnd >= dayStart;
+    });
+
+    // Sort events: non-rejected first, then by start time, with rejected events at the bottom
+    return filteredEvents.sort((a, b) => {
+        // Rejected events go to bottom
+        if (a.isRejected && !b.isRejected) return 1;
+        if (!a.isRejected && b.isRejected) return -1;
+
+        // Both same rejection status, sort by start time
+        return a.startDate.getTime() - b.startDate.getTime();
     });
 }
 

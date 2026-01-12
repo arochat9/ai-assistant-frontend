@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
 import * as Actions from "@ai-assistant-third-party-app/sdk";
 import { client } from "../config/foundry";
-import { Osdk } from "@osdk/client";
 import {
     TaskFilters,
     CreateTaskInput,
@@ -11,11 +10,10 @@ import {
     UpdateTaskSchema,
     TasksResponse,
     TaskResponse,
-    TaskActionResponse,
-    Environment,
 } from "shared";
 import { convertOsdkTaskToTask } from "../utils/taskConverter";
 import { parseDateFields, normalizeOptionalFields } from "../utils/requestParser";
+import { fetchTasksPage } from "../utils/taskQueries";
 
 /**
  * POST endpoint that fetches tasks with optional filtering
@@ -28,63 +26,9 @@ export async function getTasks(req: Request, res: Response) {
 
         console.log("Received task fetch request with filters:", filters);
 
-        const whereConditions: Array<Record<string, unknown>> = [{ environment: { $eq: Environment.PRODUCTION } }];
+        const { tasks, nextPageToken } = await fetchTasksPage(filters);
 
-        if (filters.taskOrEvent) {
-            whereConditions.push({ taskOrEvent: { $eq: filters.taskOrEvent } });
-        }
-
-        if (filters.status) {
-            whereConditions.push({ status: { $eq: filters.status } });
-        }
-
-        if (filters.subType) {
-            whereConditions.push({ subType: { $eq: filters.subType } });
-        }
-
-        if (filters.keyword) {
-            whereConditions.push({
-                $or: [
-                    { taskName: { $containsAllTerms: filters.keyword } },
-                    { taskContext: { $containsAllTerms: filters.keyword } },
-                ],
-            });
-        }
-
-        if (filters.updatedAfter) {
-            whereConditions.push({ updatedAt: { $gte: filters.updatedAfter } });
-        }
-
-        if (filters.eventStartAfter) {
-            whereConditions.push({ eventStartTime: { $gte: filters.eventStartAfter } });
-        }
-
-        if (filters.eventStartBefore) {
-            whereConditions.push({ eventStartTime: { $lte: filters.eventStartBefore } });
-        }
-
-        if (filters.eventEndAfter) {
-            whereConditions.push({ eventEndTime: { $gte: filters.eventEndAfter } });
-        }
-
-        if (filters.eventEndBefore) {
-            whereConditions.push({ eventEndTime: { $lte: filters.eventEndBefore } });
-        }
-
-        // Fetch tasks from Foundry (always filtered to prod environment)
-        const tasksQuery = client(OsdkTask).where({ $and: whereConditions });
-
-        const tasksPage = await tasksQuery.fetchPage({ $pageSize: 100 });
-        const osdkTasks: Osdk.Instance<OsdkTask>[] = tasksPage.data;
-
-        // Convert OSDK tasks to custom Task objects
-        const tasks = osdkTasks.map(convertOsdkTaskToTask);
-
-        const response: TasksResponse = {
-            tasks,
-            nextPageToken: tasksPage.nextPageToken,
-        };
-
+        const response: TasksResponse = { tasks, nextPageToken };
         return res.json(response);
     } catch (error) {
         console.error("Error fetching tasks:", error);

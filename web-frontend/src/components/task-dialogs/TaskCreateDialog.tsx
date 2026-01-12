@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { TaskFormFields } from "./TaskFormFields";
 import { TaskStatus, TaskOrEvent, SubType, Source } from "shared";
 import type { CreateTaskInput } from "shared";
+import { format } from "date-fns";
 
 interface TaskCreateDialogProps {
     open: boolean;
@@ -58,16 +59,17 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
                             taskName: formData.taskName || "",
                             taskDueTime:
                                 formData.taskDueTime instanceof Date
-                                    ? formData.taskDueTime.toISOString().slice(0, 16)
+                                    ? format(formData.taskDueTime, "yyyy-MM-dd'T'HH:mm")
                                     : "",
                             eventStartTime:
                                 formData.eventStartTime instanceof Date
-                                    ? formData.eventStartTime.toISOString().slice(0, 16)
+                                    ? format(formData.eventStartTime, "yyyy-MM-dd'T'HH:mm")
                                     : "",
                             eventEndTime:
                                 formData.eventEndTime instanceof Date
-                                    ? formData.eventEndTime.toISOString().slice(0, 16)
+                                    ? format(formData.eventEndTime, "yyyy-MM-dd'T'HH:mm")
                                     : "",
+                            eventApprovalStatus: formData.eventApprovalStatus || "",
                             tags: Array.isArray(formData.tags) ? formData.tags.join(", ") : formData.tags,
                         }}
                         onChange={handleChange}
