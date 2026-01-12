@@ -1,13 +1,19 @@
+import { useState } from "react";
 import { EventApprovalStatus } from "shared";
 import type { CalendarEvent } from "../../utils/calendar";
 import { formatEventTime } from "../../utils/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { CalendarEventPopover } from "./CalendarEventPopover";
 
 interface CalendarEventItemProps {
     event: CalendarEvent;
     onClick: (event: CalendarEvent) => void;
+    onUpdateTime?: (eventId: string, startTime: Date, endTime: Date, approvalStatus?: EventApprovalStatus) => void;
 }
 
-export function CalendarEventItem({ event, onClick }: CalendarEventItemProps) {
+export function CalendarEventItem({ event, onClick, onUpdateTime }: CalendarEventItemProps) {
+    const [open, setOpen] = useState(false);
+
     const getEventStyles = () => {
         if (event.isRejected) {
             return "bg-destructive/10 border-destructive/20 text-destructive line-through";
@@ -21,12 +27,29 @@ export function CalendarEventItem({ event, onClick }: CalendarEventItemProps) {
     };
 
     return (
-        <button
-            onClick={() => onClick(event)}
-            className={`w-full text-left px-2 py-1 rounded text-xs border cursor-pointer hover:opacity-80 transition-opacity ${getEventStyles()}`}
-        >
-            <div className="font-medium truncate">{event.taskName || "Untitled Event"}</div>
-            <div className="text-[10px] opacity-75">{formatEventTime(event)}</div>
-        </button>
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                    className={`w-full text-left px-2 py-1 rounded text-xs border cursor-pointer hover:opacity-80 transition-opacity ${getEventStyles()}`}
+                >
+                    <div className="font-medium truncate">{event.taskName || "Untitled Event"}</div>
+                    <div className="text-[10px] opacity-75">{formatEventTime(event)}</div>
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96" side="right" align="start">
+                <CalendarEventPopover
+                    event={event}
+                    onUpdateTime={onUpdateTime}
+                    onOpenDrawer={() => {
+                        setOpen(false);
+                        onClick(event);
+                    }}
+                    onClose={() => setOpen(false)}
+                />
+            </PopoverContent>
+        </Popover>
     );
 }

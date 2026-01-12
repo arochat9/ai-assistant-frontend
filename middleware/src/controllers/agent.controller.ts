@@ -5,7 +5,7 @@ import { z } from "zod";
 import { TaskStatus, SubType, TaskOrEvent } from "shared";
 import { fetchTasks, fetchTaskById } from "../utils/taskQueries";
 
-const SYSTEM_PROMPT = `You are a helpful task management assistant. You help users view and understand their tasks.
+const getSystemPrompt = () => `You are a helpful task management assistant. You help users view and understand their tasks.
 When users ask about their tasks, use the getTasks tool to retrieve them.
 When users ask about a specific task, use the getTaskDetails tool.
 Be conversational, friendly, and concise. Format task information clearly.
@@ -48,7 +48,7 @@ export async function chat(req: Request, res: Response) {
 
         const result = streamText({
             model: openai("gpt-4-turbo"),
-            system: SYSTEM_PROMPT,
+            system: getSystemPrompt(),
             messages,
             tools,
             maxSteps: 5,

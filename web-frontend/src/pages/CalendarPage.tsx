@@ -5,9 +5,11 @@ import { CalendarHeader } from "../components/calendar/CalendarHeader";
 import { CalendarGrid } from "../components/calendar/CalendarGrid";
 import { useTaskDrawer } from "../contexts/TaskDrawerContext";
 import { useTaskDialog } from "../contexts/TaskDialogContext";
-import { TaskOrEvent } from "shared";
+import { useTaskMutations } from "../hooks/useTaskMutations";
+import { TaskOrEvent, EventApprovalStatus } from "shared";
 import type { ViewMode, CalendarEvent } from "../utils/calendar";
 import { taskToCalendarEvent, getMonthStart, getWeekStart, getWeekEnd } from "../utils/calendar";
+import { toast } from "sonner";
 
 export function CalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -15,6 +17,8 @@ export function CalendarPage() {
     const { openDrawer } = useTaskDrawer();
     const { openCreateDialog } = useTaskDialog();
     const queryClient = useQueryClient();
+
+    const { updateMutation } = useTaskMutations({});
 
     // Calculate date range based on current view - load 4 months for month view
     const dateRange = useMemo(() => {
@@ -35,7 +39,10 @@ export function CalendarPage() {
 
     // Fetch only events within the visible date range
     const { data, isLoading, error } = useQuery({
-        queryKey: ["events", dateRange.start.toISOString(), dateRange.end.toISOString()],
+        queryKey: [
+            "tasks",
+            { taskOrEvent: TaskOrEvent.EVENT, eventStartBefore: dateRange.end, eventEndAfter: dateRange.start },
+        ],
         queryFn: () =>
             tasksApi.getTasks({
                 taskOrEvent: TaskOrEvent.EVENT,
@@ -57,7 +64,14 @@ export function CalendarPage() {
         };
 
         queryClient.prefetchQuery({
-            queryKey: ["events", prefetchRange.start.toISOString(), prefetchRange.end.toISOString()],
+            queryKey: [
+                "tasks",
+                {
+                    taskOrEvent: TaskOrEvent.EVENT,
+                    eventStartBefore: prefetchRange.end,
+                    eventEndAfter: prefetchRange.start,
+                },
+            ],
             queryFn: () =>
                 tasksApi.getTasks({
                     taskOrEvent: TaskOrEvent.EVENT,
@@ -105,6 +119,30 @@ export function CalendarPage() {
         openCreateDialog();
     };
 
+    const handleUpdateTime = (
+        eventId: string,
+        startTime: Date,
+        endTime: Date,
+        approvalStatus?: EventApprovalStatus
+    ) => {
+        const event = events.find((e) => e.taskId === eventId);
+        if (!event) {
+            toast.error("Event not found");
+            return;
+        }
+
+        updateMutation.mutate({
+            taskId: eventId,
+            taskName: event.taskName,
+            taskOrEvent: event.taskOrEvent,
+            subType: event.subType,
+            status: event.status,
+            eventStartTime: startTime,
+            eventEndTime: endTime,
+            eventApprovalStatus: approvalStatus,
+        });
+    };
+
     return (
         <div className="h-full p-4 flex flex-col">
             <CalendarHeader
@@ -131,6 +169,7 @@ export function CalendarPage() {
                     viewMode={viewMode}
                     events={events}
                     onEventClick={handleEventClick}
+                    onUpdateTime={handleUpdateTime}
                 />
             )}
         </div>

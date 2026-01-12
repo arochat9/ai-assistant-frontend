@@ -1,4 +1,5 @@
 import type { CalendarEvent, ViewMode } from "../../utils/calendar";
+import type { EventApprovalStatus } from "shared";
 import { getWeekDays, getMonthDays, isSameDay, isInMonth, getEventsForDay } from "../../utils/calendar";
 import { CalendarEventItem } from "./CalendarEventItem";
 
@@ -7,11 +8,12 @@ interface CalendarGridProps {
     viewMode: ViewMode;
     events: CalendarEvent[];
     onEventClick: (event: CalendarEvent) => void;
+    onUpdateTime?: (eventId: string, startTime: Date, endTime: Date, approvalStatus?: EventApprovalStatus) => void;
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function CalendarGrid({ currentDate, viewMode, events, onEventClick }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, viewMode, events, onEventClick, onUpdateTime }: CalendarGridProps) {
     const days = viewMode === "week" ? getWeekDays(currentDate) : getMonthDays(currentDate);
     const today = new Date();
 
@@ -31,7 +33,12 @@ export function CalendarGrid({ currentDate, viewMode, events, onEventClick }: Ca
                     <div className={`text-sm font-medium mb-2 ${isToday ? "text-blue-600" : ""}`}>{day.getDate()}</div>
                     <div className="space-y-1">
                         {dayEvents.map((event) => (
-                            <CalendarEventItem key={event.taskId} event={event} onClick={onEventClick} />
+                            <CalendarEventItem
+                                key={event.taskId}
+                                event={event}
+                                onClick={onEventClick}
+                                onUpdateTime={onUpdateTime}
+                            />
                         ))}
                     </div>
                 </div>

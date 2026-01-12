@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Select } from "../ui/select";
+import { ExternalLink } from "lucide-react";
+import type { CalendarEvent } from "../../utils/calendar";
+import { EventApprovalStatus } from "shared";
+import { format } from "date-fns";
+
+interface CalendarEventPopoverProps {
+    event: CalendarEvent;
+    onUpdateTime?: (eventId: string, startTime: Date, endTime: Date, approvalStatus?: EventApprovalStatus) => void;
+    onOpenDrawer?: () => void;
+    onClose?: () => void;
+}
+
+export function CalendarEventPopover({ event, onUpdateTime, onOpenDrawer, onClose }: CalendarEventPopoverProps) {
+    const [startTime, setStartTime] = useState(event.eventStartTime ? new Date(event.eventStartTime) : new Date());
+    const [endTime, setEndTime] = useState(event.eventEndTime ? new Date(event.eventEndTime) : new Date());
+    const [approvalStatus, setApprovalStatus] = useState<EventApprovalStatus | undefined>(event.eventApprovalStatus);
+
+    const handleSave = () => {
+        if (onUpdateTime) {
+            onUpdateTime(event.taskId, startTime, endTime, approvalStatus);
+        }
+        onClose?.();
+    };
+
+    const handleCancel = () => {
+        setStartTime(event.eventStartTime ? new Date(event.eventStartTime) : new Date());
+        setEndTime(event.eventEndTime ? new Date(event.eventEndTime) : new Date());
+        setApprovalStatus(event.eventApprovalStatus);
+    };
+
+    return (
+        <div className="space-y-3 max-w-sm">
+            <div>
+                <h3 className="font-semibold text-base mb-2">{event.taskName || "Untitled Event"}</h3>
+                <div className="flex gap-1 flex-wrap">
+                    <Badge variant="outline" className="text-xs">
+                        {event.subType}
+                    </Badge>
+                    {event.eventApprovalStatus && (
+                        <Badge
+                            variant={event.eventApprovalStatus === "Pending" ? "secondary" : "default"}
+                            className="text-xs"
+                        >
+                            {event.eventApprovalStatus}
+                        </Badge>
+                    )}
+                    {event.source && (
+                        <Badge variant="outline" className="text-xs">
+                            {event.source}
+                        </Badge>
+                    )}
+                </div>
+            </div>
+
+            {event.taskContext && (
+                <div>
+                    <Label className="text-xs text-muted-foreground">Description</Label>
+                    <p className="text-sm mt-1">{event.taskContext}</p>
+                </div>
+            )}
+
+            {event.userNotes && (
+                <div>
+                    <Label className="text-xs text-muted-foreground">Notes</Label>
+                    <p className="text-sm mt-1">{event.userNotes}</p>
+                </div>
+            )}
+
+            <div className="border-t pt-3">
+                <Label className="text-xs text-muted-foreground mb-2 block">Event Time</Label>
+                <div className="space-y-2">
+                    <div>
+                        <Label htmlFor="popover-start-time" className="text-xs">
+                            Start
+                        </Label>
+                        <Input
+                            id="popover-start-time"
+                            type="datetime-local"
+                            value={format(startTime, "yyyy-MM-dd'T'HH:mm")}
+                            onChange={(e) => setStartTime(new Date(e.target.value))}
+                            className="text-xs h-8"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="popover-end-time" className="text-xs">
+                            End
+                        </Label>
+                        <Input
+                            id="popover-end-time"
+                            type="datetime-local"
+                            value={format(endTime, "yyyy-MM-dd'T'HH:mm")}
+                            onChange={(e) => setEndTime(new Date(e.target.value))}
+                            className="text-xs h-8"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="popover-approval-status" className="text-xs">
+                            Approval Status
+                        </Label>
+                        <Select
+                            id="popover-approval-status"
+                            value={approvalStatus || ""}
+                            onChange={(e) => setApprovalStatus((e.target.value as EventApprovalStatus) || undefined)}
+                            className="text-xs h-8"
+                        >
+                            <option value="">Select status...</option>
+                            {Object.values(EventApprovalStatus).map((status) => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                        <Button size="sm" onClick={handleSave} className="h-7 text-xs flex-1">
+                            Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancel} className="h-7 text-xs flex-1">
+                            Reset
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {onOpenDrawer && (
+                <div className="border-t pt-3">
+                    <Button size="sm" variant="outline" onClick={onOpenDrawer} className="w-full h-8 text-xs">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Open Full Details
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}
