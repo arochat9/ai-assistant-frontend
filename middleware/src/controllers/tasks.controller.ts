@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
 import * as Actions from "@ai-assistant-third-party-app/sdk";
 import { client } from "../config/foundry";
+import { Osdk } from "@osdk/client";
 import {
     TaskFilters,
     CreateTaskInput,
@@ -10,10 +11,12 @@ import {
     UpdateTaskSchema,
     TasksResponse,
     TaskResponse,
+    TaskActionResponse,
+    Environment,
 } from "shared";
 import { convertOsdkTaskToTask } from "../utils/taskConverter";
 import { parseDateFields, normalizeOptionalFields } from "../utils/requestParser";
-import { fetchTasksPage } from "../utils/taskQueries";
+import { fetchTasks } from "../utils/taskQueries";
 
 /**
  * POST endpoint that fetches tasks with optional filtering
@@ -26,9 +29,14 @@ export async function getTasks(req: Request, res: Response) {
 
         console.log("Received task fetch request with filters:", filters);
 
-        const { tasks, nextPageToken } = await fetchTasksPage(filters);
+        // Use shared utility function to fetch tasks
+        const tasks = await fetchTasks(filters);
 
-        const response: TasksResponse = { tasks, nextPageToken };
+        const response: TasksResponse = {
+            tasks,
+            nextPageToken: undefined, // TODO: Handle pagination if needed
+        };
+
         return res.json(response);
     } catch (error) {
         console.error("Error fetching tasks:", error);

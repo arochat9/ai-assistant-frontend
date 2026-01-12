@@ -82,8 +82,12 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
                         values={{
                             ...formData,
                             taskDueTime: formData.taskDueTime ? format(formData.taskDueTime, "yyyy-MM-dd'T'HH:mm") : "",
-                            eventStartTime: formData.eventStartTime ? format(formData.eventStartTime, "yyyy-MM-dd'T'HH:mm") : "",
-                            eventEndTime: formData.eventEndTime ? format(formData.eventEndTime, "yyyy-MM-dd'T'HH:mm") : "",
+                            eventStartTime: formData.eventStartTime
+                                ? format(formData.eventStartTime, "yyyy-MM-dd'T'HH:mm")
+                                : "",
+                            eventEndTime: formData.eventEndTime
+                                ? format(formData.eventEndTime, "yyyy-MM-dd'T'HH:mm")
+                                : "",
                             eventApprovalStatus: formData.eventApprovalStatus || "",
                         }}
                         onChange={handleChange}

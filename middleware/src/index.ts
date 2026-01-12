@@ -2,13 +2,27 @@ import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import { WebSocketServer } from "ws";
+import http from "http";
 import tasksRoutes from "./routes/tasks.routes";
 import agentRoutes from "./routes/agent.routes";
+import { handleAgentWebSocket } from "./controllers/agent.controller";
 
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create WebSocket server
+const wss = new WebSocketServer({ server, path: "/ws/agent" });
+
+wss.on("connection", (ws) => {
+    console.log("WebSocket client connected");
+    handleAgentWebSocket(ws);
+});
 
 // Middleware
 app.use(cors());
@@ -33,6 +47,6 @@ app.get("*", (req, res) => {
 });
 
 // Start server
-app.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
     console.log(`Middleware server is running on port ${PORT}`);
 });

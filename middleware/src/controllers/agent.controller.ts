@@ -15,7 +15,10 @@ const tools = {
     getTasks: tool({
         description: "Get tasks with optional filters. Use when user asks about tasks, to-dos, or their schedule.",
         parameters: z.object({
-            status: z.nativeEnum(TaskStatus).optional().describe("Filter by status. Default to Open since there are many closed tasks."),
+            status: z
+                .nativeEnum(TaskStatus)
+                .optional()
+                .describe("Filter by status. Default to Open since there are many closed tasks."),
             subType: z.nativeEnum(SubType).optional().describe("Filter by task subtype"),
             taskOrEvent: z.nativeEnum(TaskOrEvent).optional().describe("Filter by task or event"),
             keyword: z.string().optional().describe("Search keyword in task name or context"),
