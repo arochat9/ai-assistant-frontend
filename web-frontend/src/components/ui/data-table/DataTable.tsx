@@ -97,8 +97,10 @@ export function DataTable<T>({
                                 >
                                     <td
                                         colSpan={totalColumns}
-                                        className={`px-3 py-1.5 font-semibold text-xs uppercase tracking-wide text-foreground border-b-2 border-border transition-colors ${
-                                            hoveredGroup === groupValue ? "bg-primary/20" : "bg-muted/50 hover:bg-muted"
+                                        className={`px-3 py-1.5 font-semibold text-sm text-foreground/80 border-y border-border/50 transition-colors ${
+                                            hoveredGroup === groupValue
+                                                ? "bg-primary/20"
+                                                : "bg-muted/60 hover:bg-muted/75"
                                         }`}
                                     >
                                         {groupHeader(groupValue === "Ungrouped" ? undefined : groupValue)}
