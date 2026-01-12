@@ -39,7 +39,7 @@ export function TasksPage() {
                     <h2 className="text-2xl font-bold">Tasks</h2>
                     <p className="text-sm text-muted-foreground">Manage and track your tasks</p>
                 </div>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={() => openCreateDialog()}>
                     <Plus className="mr-2 h-4 w-4" />
                     New Task
                 </Button>
@@ -63,7 +63,7 @@ export function TasksPage() {
                     <p className="text-destructive">Error loading tasks: {error.message}</p>
                 </div>
             ) : !data?.tasks || data.tasks.length === 0 ? (
-                <EmptyState onCreateTask={openCreateDialog} />
+                <EmptyState onCreateTask={() => openCreateDialog()} />
             ) : (
                 <div className="flex-1 min-h-0">
                     <TasksTable

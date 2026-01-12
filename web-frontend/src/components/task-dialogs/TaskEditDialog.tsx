@@ -45,9 +45,7 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
         tags: task.tags?.join(", ") || "",
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const submitForm = () => {
         const updateData: UpdateTaskInput = {
             ...formData,
             taskId: task.taskId,
@@ -60,6 +58,18 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
         };
 
         onSubmit(updateData);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        submitForm();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submitForm();
+        }
     };
 
     const handleChange = (field: string, value: string) => {
@@ -91,6 +101,7 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
                             eventApprovalStatus: formData.eventApprovalStatus || "",
                         }}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                     />
 
                     <div className="flex justify-end gap-2 pt-4">

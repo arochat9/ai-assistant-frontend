@@ -59,7 +59,8 @@ export function DataTable<T>({
           )
         : { All: sortedData };
 
-    const totalColumns = columns.length + (showDrawerColumn ? 1 : 0) + (actionsColumn ? 1 : 0);
+    const totalColumns =
+        columns.filter((col) => !col.hidden).length + (showDrawerColumn ? 1 : 0) + (actionsColumn ? 1 : 0);
 
     return (
         <div className="rounded-lg border h-full overflow-auto">
@@ -146,61 +147,68 @@ export function DataTable<T>({
                                             hoveredGroup === groupValue ? "bg-primary/10" : "hover:bg-muted/50"
                                         } ${isRowCompleted ? "opacity-50" : ""} ${draggable ? "cursor-move" : ""}`}
                                     >
-                                        {columns.map((column) => {
-                                            if (column.editType === "checkbox") {
-                                                return (
-                                                    <td
-                                                        key={column.key}
-                                                        className="pl-3 pr-2 py-3 align-middle"
-                                                        style={column.width ? { width: column.width } : undefined}
-                                                    >
-                                                        <CheckboxCell
-                                                            status={
-                                                                column.accessor(row) as "Open" | "Closed" | "Backlogged"
-                                                            }
-                                                            onToggle={() => {
-                                                                const currentStatus = column.accessor(row) as string;
-                                                                const newValue =
-                                                                    currentStatus === "Open"
-                                                                        ? "Closed"
-                                                                        : currentStatus === "Closed"
-                                                                        ? "Backlogged"
-                                                                        : "Open";
-                                                                onCellEdit?.(row, column.key, newValue);
-                                                            }}
-                                                        />
-                                                    </td>
-                                                );
-                                            }
+                                        {columns
+                                            .filter((col) => !col.hidden)
+                                            .map((column) => {
+                                                if (column.editType === "checkbox") {
+                                                    return (
+                                                        <td
+                                                            key={column.key}
+                                                            className="pl-3 pr-2 py-3 align-middle"
+                                                            style={column.width ? { width: column.width } : undefined}
+                                                        >
+                                                            <CheckboxCell
+                                                                status={
+                                                                    column.accessor(row) as
+                                                                        | "Open"
+                                                                        | "Closed"
+                                                                        | "Backlogged"
+                                                                }
+                                                                onToggle={() => {
+                                                                    const currentStatus = column.accessor(
+                                                                        row
+                                                                    ) as string;
+                                                                    const newValue =
+                                                                        currentStatus === "Open"
+                                                                            ? "Closed"
+                                                                            : currentStatus === "Closed"
+                                                                            ? "Backlogged"
+                                                                            : "Open";
+                                                                    onCellEdit?.(row, column.key, newValue);
+                                                                }}
+                                                            />
+                                                        </td>
+                                                    );
+                                                }
 
-                                            if (column.editType === "select" && column.selectOptions) {
+                                                if (column.editType === "select" && column.selectOptions) {
+                                                    return (
+                                                        <SelectCell
+                                                            key={column.key}
+                                                            row={row}
+                                                            column={column}
+                                                            onCellEdit={onCellEdit}
+                                                            options={column.selectOptions}
+                                                        />
+                                                    );
+                                                }
+
                                                 return (
-                                                    <SelectCell
+                                                    <TableCell
                                                         key={column.key}
                                                         row={row}
+                                                        rowKey={rowKey}
                                                         column={column}
+                                                        isEditing={isEditing(rowKey, column.key)}
+                                                        editValue={editValue}
+                                                        onEditValueChange={setEditValue}
+                                                        onStartEdit={startEdit}
+                                                        onCancelEdit={cancelEdit}
+                                                        onRowClick={onRowClick}
                                                         onCellEdit={onCellEdit}
-                                                        options={column.selectOptions}
                                                     />
                                                 );
-                                            }
-
-                                            return (
-                                                <TableCell
-                                                    key={column.key}
-                                                    row={row}
-                                                    rowKey={rowKey}
-                                                    column={column}
-                                                    isEditing={isEditing(rowKey, column.key)}
-                                                    editValue={editValue}
-                                                    onEditValueChange={setEditValue}
-                                                    onStartEdit={startEdit}
-                                                    onCancelEdit={cancelEdit}
-                                                    onRowClick={onRowClick}
-                                                    onCellEdit={onCellEdit}
-                                                />
-                                            );
-                                        })}
+                                            })}
                                         {showDrawerColumn && (
                                             <td
                                                 className="p-0 align-middle text-center"

@@ -9,6 +9,7 @@ import { PlannedFor, TaskOrEvent } from "shared";
 import type { Task, TaskStatus } from "shared";
 import { Plus } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { SortSelector } from "../components/ui/SortSelector";
 
 interface PlannerTableProps {
     title: string;
@@ -21,6 +22,10 @@ interface PlannerTableProps {
     setDraggedTask: (task: Task | null) => void;
     allGroups?: string[];
     onCreateClick?: () => void;
+    sortKey?: string;
+    sortDirection?: "asc" | "desc";
+    onSortChange?: (key: string, direction: "asc" | "desc") => void;
+    showSortSelector?: boolean;
 }
 
 function PlannerTable({
@@ -34,6 +39,10 @@ function PlannerTable({
     setDraggedTask,
     allGroups,
     onCreateClick,
+    sortKey = "taskName",
+    sortDirection = "asc",
+    onSortChange,
+    showSortSelector = false,
 }: PlannerTableProps) {
     const { openDrawer } = useTaskDrawer();
     const { updateMutation } = useTaskMutations({});
@@ -75,6 +84,20 @@ function PlannerTable({
             sortValue: (task) => task.taskName?.toLowerCase() || "",
             cell: (value) => <span className="font-medium">{(value as string) || "Untitled"}</span>,
         },
+        {
+            key: "createdAt",
+            header: "Created",
+            sortable: true,
+            hidden: true,
+            accessor: (task) => task.createdAt,
+            sortValue: (task) => task.createdAt.getTime(),
+        },
+    ];
+
+    const sortOptions = [
+        { value: "taskName", label: "Name" },
+        { value: "status", label: "Status" },
+        { value: "createdAt", label: "Created" },
     ];
 
     return (
@@ -90,7 +113,6 @@ function PlannerTable({
                 // Only handle if not already handled by a group drop
                 if (e.defaultPrevented) return;
                 e.preventDefault();
-                console.log("Drop event triggered on container", { draggedTask, defaultPlannedFor, title });
                 setIsDragOver(false);
                 if (draggedTask) {
                     onDrop(draggedTask, defaultPlannedFor);
@@ -100,17 +122,27 @@ function PlannerTable({
         >
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
                 <h3 className="text-lg font-semibold">{title}</h3>
-                {onCreateClick && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onCreateClick}
-                        className="h-8 w-8 p-0"
-                        title="Create new task"
-                    >
-                        <Plus className="h-4 w-4" />
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {showSortSelector && onSortChange && (
+                        <SortSelector
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSortChange={onSortChange}
+                            options={sortOptions}
+                        />
+                    )}
+                    {onCreateClick && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onCreateClick}
+                            className="h-8 w-8 p-0"
+                            title="Create new task"
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className={`flex-1 min-h-0 transition-colors ${isDragOver ? "bg-primary/10 rounded-lg" : ""}`}>
                 {tasks.length === 0 ? (
@@ -122,8 +154,9 @@ function PlannerTable({
                         data={tasks}
                         columns={columns}
                         getRowKey={(task) => task.taskId}
-                        defaultSortKey="taskName"
-                        defaultSortDirection="asc"
+                        sortKey={sortKey}
+                        sortDirection={sortDirection}
+                        onSortChange={onSortChange}
                         onCellEdit={handleCellEdit}
                         showDrawerColumn
                         drawerColumnWidth="30px"
@@ -134,14 +167,8 @@ function PlannerTable({
                         draggable
                         onDragStart={setDraggedTask}
                         onGroupDrop={(groupValue) => {
-                            console.log("onGroupDrop called", {
-                                groupValue,
-                                plannedForValues,
-                                draggedTask: draggedTask?.taskName,
-                            });
                             if (draggedTask) {
                                 const plannedFor = plannedForValues?.[groupValue || ""] || defaultPlannedFor;
-                                console.log("Resolved plannedFor:", plannedFor);
                                 onDrop(draggedTask, plannedFor);
                                 setDraggedTask(null);
                             }
@@ -162,6 +189,14 @@ export function WorkPlannerPage() {
     const { openCreateDialog } = useTaskDialog();
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
+    const [sortKey, setSortKey] = useState("createdAt");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+    const handleSortChange = (key: string, direction: "asc" | "desc") => {
+        setSortKey(key);
+        setSortDirection(direction);
+    };
+
     const todayTasks =
         data?.tasks.filter(
             (task) => task.plannedFor === PlannedFor.TODAY || task.plannedFor === PlannedFor.TODAY_STRETCH_GOAL
@@ -180,7 +215,6 @@ export function WorkPlannerPage() {
     const unplannedTasks = data?.tasks.filter((task) => !task.plannedFor) || [];
 
     const handleDrop = async (task: Task, newPlannedFor?: PlannedFor) => {
-        console.log("handleDrop called", { task: task.taskName, currentPlannedFor: task.plannedFor, newPlannedFor });
         if (task.plannedFor === newPlannedFor) return;
 
         await updateMutation.mutateAsync({
@@ -190,7 +224,6 @@ export function WorkPlannerPage() {
             subType: task.subType,
             plannedFor: newPlannedFor,
         });
-        console.log("Update completed");
     };
 
     return (
@@ -276,6 +309,10 @@ export function WorkPlannerPage() {
                                 draggedTask={draggedTask}
                                 setDraggedTask={setDraggedTask}
                                 onCreateClick={() => openCreateDialog({ plannedFor: undefined })}
+                                sortKey={sortKey}
+                                sortDirection={sortDirection}
+                                onSortChange={handleSortChange}
+                                showSortSelector
                             />
                         </div>
                     </div>

@@ -33,29 +33,31 @@ export function TableHeader<T>({
     return (
         <thead>
             <tr className="transition-colors hover:bg-muted/50">
-                {columns.map((column) => (
-                    <th
-                        key={column.key}
-                        className="sticky top-0 z-10 bg-background h-10 px-1 text-left align-middle font-medium text-muted-foreground"
-                        style={{
-                            boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
-                            ...(column.width ? { width: column.width } : {}),
-                        }}
-                    >
-                        {column.sortable ? (
-                            <Button
-                                variant="ghost"
-                                onClick={() => onSort(column.key)}
-                                className="h-auto p-0 hover:bg-transparent font-semibold"
-                            >
-                                {column.header}
-                                {getSortIcon(column.key)}
-                            </Button>
-                        ) : (
-                            <span className="font-semibold">{column.header}</span>
-                        )}
-                    </th>
-                ))}
+                {columns
+                    .filter((col) => !col.hidden)
+                    .map((column) => (
+                        <th
+                            key={column.key}
+                            className="sticky top-0 z-10 bg-background h-10 px-1 text-left align-middle font-medium text-muted-foreground"
+                            style={{
+                                boxShadow: "inset 0 -1px 0 0 hsl(var(--border))",
+                                ...(column.width ? { width: column.width } : {}),
+                            }}
+                        >
+                            {column.sortable ? (
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => onSort(column.key)}
+                                    className="h-auto p-0 hover:bg-transparent font-semibold"
+                                >
+                                    {column.header}
+                                    {getSortIcon(column.key)}
+                                </Button>
+                            ) : (
+                                <span className="font-semibold">{column.header}</span>
+                            )}
+                        </th>
+                    ))}
                 {showDrawerColumn && (
                     <th
                         className="sticky top-0 z-10 bg-background h-10 p-0 text-center align-middle font-medium text-muted-foreground"

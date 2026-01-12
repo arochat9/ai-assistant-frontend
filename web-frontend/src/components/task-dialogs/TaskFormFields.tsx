@@ -1,4 +1,5 @@
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
 import { TaskStatus, TaskOrEvent, SubType, PlannedFor, Source, EventApprovalStatus } from "shared";
@@ -20,10 +21,17 @@ interface TaskFormFieldsProps {
     };
     onChange: (field: string, value: string) => void;
     showRequired?: boolean;
+    onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
-export function TaskFormFields({ values, onChange, showRequired = false }: TaskFormFieldsProps) {
+export function TaskFormFields({ values, onChange, showRequired = false, onKeyDown }: TaskFormFieldsProps) {
     const isEvent = values.taskOrEvent === TaskOrEvent.EVENT;
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (e.key === "Enter" && !e.shiftKey && e.currentTarget.id !== "userNotes") {
+            onKeyDown?.(e);
+        }
+    };
 
     return (
         <>
@@ -34,6 +42,7 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                     required={showRequired}
                     value={values.taskName}
                     onChange={(e) => onChange("taskName", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder="Enter task name"
                     autoComplete="off"
                     autoFocus
@@ -120,12 +129,13 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
 
             <div>
                 <Label htmlFor="userNotes">Notes</Label>
-                <Input
+                <Textarea
                     id="userNotes"
                     value={values.userNotes || ""}
                     onChange={(e) => onChange("userNotes", e.target.value)}
-                    placeholder="Add notes or context..."
-                    autoComplete="off"
+                    onKeyDown={handleKeyDown}
+                    placeholder="Add notes or context... (Shift+Enter for new line)"
+                    rows={3}
                 />
             </div>
 
@@ -135,6 +145,7 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                     id="tags"
                     value={values.tags || ""}
                     onChange={(e) => onChange("tags", e.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder="work, urgent task, personal"
                     autoComplete="off"
                 />

@@ -13,6 +13,7 @@ export interface ColumnDef<T> {
     sortValue?: (row: T) => string | number;
     editValue?: (value: unknown) => string;
     parseValue?: (input: string) => unknown;
+    hidden?: boolean;
 }
 
 export interface DataTableProps<T> {

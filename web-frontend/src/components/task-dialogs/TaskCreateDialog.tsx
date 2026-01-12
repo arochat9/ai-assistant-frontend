@@ -34,8 +34,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defa
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const submitForm = () => {
         const submitData: CreateTaskInput = {
             ...formData,
             tags:
@@ -47,6 +46,18 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defa
                     : formData.tags,
         };
         onSubmit(submitData);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        submitForm();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submitForm();
+        }
     };
 
     const handleOpenChange = (newOpen: boolean) => {
@@ -81,6 +92,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defa
                             tags: Array.isArray(formData.tags) ? formData.tags.join(", ") : formData.tags,
                         }}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         showRequired
                     />
 
