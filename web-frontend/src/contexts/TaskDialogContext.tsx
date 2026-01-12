@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Task } from "shared";
+import type { CreateTaskInput } from "shared";
 
 interface TaskDialogContextType {
     createOpen: boolean;
     editTask: Task | null;
-    openCreateDialog: () => void;
+    createDefaults?: Partial<CreateTaskInput>;
+    openCreateDialog: (defaults?: Partial<CreateTaskInput>) => void;
     openEditDialog: (task: Task) => void;
     closeCreateDialog: () => void;
     closeEditDialog: () => void;
@@ -15,9 +17,16 @@ const TaskDialogContext = createContext<TaskDialogContextType | undefined>(undef
 export function TaskDialogProvider({ children }: { children: ReactNode }) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editTask, setEditTask] = useState<Task | null>(null);
+    const [createDefaults, setCreateDefaults] = useState<Partial<CreateTaskInput> | undefined>();
 
-    const openCreateDialog = () => setCreateOpen(true);
-    const closeCreateDialog = () => setCreateOpen(false);
+    const openCreateDialog = (defaults?: Partial<CreateTaskInput>) => {
+        setCreateDefaults(defaults);
+        setCreateOpen(true);
+    };
+    const closeCreateDialog = () => {
+        setCreateOpen(false);
+        setCreateDefaults(undefined);
+    };
 
     const openEditDialog = (task: Task) => setEditTask(task);
     const closeEditDialog = () => setEditTask(null);
@@ -27,6 +36,7 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
             value={{
                 createOpen,
                 editTask,
+                createDefaults,
                 openCreateDialog,
                 openEditDialog,
                 closeCreateDialog,

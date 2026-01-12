@@ -11,16 +11,20 @@ interface TaskCreateDialogProps {
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: CreateTaskInput) => void;
     isLoading: boolean;
+    defaults?: Partial<CreateTaskInput>;
 }
 
-export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: TaskCreateDialogProps) {
-    const [formData, setFormData] = useState<CreateTaskInput>({
-        status: TaskStatus.OPEN,
-        taskName: "",
-        taskOrEvent: TaskOrEvent.TASK,
-        subType: SubType.FUN,
-        source: Source.USER,
-    });
+const getDefaultFormData = (defaults?: Partial<CreateTaskInput>): CreateTaskInput => ({
+    status: TaskStatus.OPEN,
+    taskName: "",
+    taskOrEvent: TaskOrEvent.TASK,
+    subType: SubType.CHORE,
+    source: Source.USER,
+    ...defaults,
+});
+
+export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defaults }: TaskCreateDialogProps) {
+    const [formData, setFormData] = useState<CreateTaskInput>(() => getDefaultFormData(defaults));
 
     const handleChange = (field: string, value: string) => {
         if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
@@ -45,8 +49,12 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading }: Ta
         onSubmit(submitData);
     };
 
+    const handleOpenChange = (newOpen: boolean) => {
+        onOpenChange(newOpen);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create New Task</DialogTitle>

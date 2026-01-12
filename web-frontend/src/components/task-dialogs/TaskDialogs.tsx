@@ -6,7 +6,7 @@ import { useTaskMutations } from "../../hooks/useTaskMutations";
 import type { Task } from "shared";
 
 export function TaskDialogs() {
-    const { createOpen, editTask, closeCreateDialog, closeEditDialog } = useTaskDialog();
+    const { createOpen, editTask, createDefaults, closeCreateDialog, closeEditDialog } = useTaskDialog();
     const { updateTask: updateDrawerTask } = useTaskDrawer();
 
     const handleUpdateSuccess = (task?: Task) => {
@@ -23,12 +23,15 @@ export function TaskDialogs() {
 
     return (
         <>
-            <TaskCreateDialog
-                open={createOpen}
-                onOpenChange={closeCreateDialog}
-                onSubmit={createMutation.mutate}
-                isLoading={createMutation.isPending}
-            />
+            {createOpen && (
+                <TaskCreateDialog
+                    open={createOpen}
+                    onOpenChange={closeCreateDialog}
+                    onSubmit={createMutation.mutate}
+                    isLoading={createMutation.isPending}
+                    defaults={createDefaults}
+                />
+            )}
 
             {editTask && (
                 <TaskEditDialog

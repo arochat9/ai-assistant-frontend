@@ -3,9 +3,12 @@ import { useState } from "react";
 import { tasksApi } from "../services/api";
 import { DataTable, type ColumnDef } from "../components/ui/data-table";
 import { useTaskDrawer } from "../contexts/TaskDrawerContext";
+import { useTaskDialog } from "../contexts/TaskDialogContext";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import { PlannedFor, TaskOrEvent } from "shared";
 import type { Task, TaskStatus } from "shared";
+import { Plus } from "lucide-react";
+import { Button } from "../components/ui/button";
 
 interface PlannerTableProps {
     title: string;
@@ -17,6 +20,7 @@ interface PlannerTableProps {
     draggedTask: Task | null;
     setDraggedTask: (task: Task | null) => void;
     allGroups?: string[];
+    onCreateClick?: () => void;
 }
 
 function PlannerTable({
@@ -29,6 +33,7 @@ function PlannerTable({
     draggedTask,
     setDraggedTask,
     allGroups,
+    onCreateClick,
 }: PlannerTableProps) {
     const { openDrawer } = useTaskDrawer();
     const { updateMutation } = useTaskMutations({});
@@ -93,7 +98,20 @@ function PlannerTable({
                 }
             }}
         >
-            <h3 className="text-lg font-semibold mb-2 flex-shrink-0">{title}</h3>
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                <h3 className="text-lg font-semibold">{title}</h3>
+                {onCreateClick && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onCreateClick}
+                        className="h-8 w-8 p-0"
+                        title="Create new task"
+                    >
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
             <div className={`flex-1 min-h-0 transition-colors ${isDragOver ? "bg-primary/10 rounded-lg" : ""}`}>
                 {tasks.length === 0 ? (
                     <div className="flex h-full items-center justify-center rounded-lg border bg-muted/10">
@@ -141,6 +159,7 @@ export function WorkPlannerPage() {
         queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK }),
     });
     const { updateMutation } = useTaskMutations({});
+    const { openCreateDialog } = useTaskDialog();
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
     const todayTasks =
@@ -202,6 +221,7 @@ export function WorkPlannerPage() {
                                     draggedTask={draggedTask}
                                     setDraggedTask={setDraggedTask}
                                     allGroups={[PlannedFor.TODAY, PlannedFor.TODAY_STRETCH_GOAL]}
+                                    onCreateClick={() => openCreateDialog({ plannedFor: PlannedFor.TODAY })}
                                 />
                             </div>
                             <div className="flex-1 min-h-0">
@@ -218,6 +238,7 @@ export function WorkPlannerPage() {
                                     draggedTask={draggedTask}
                                     setDraggedTask={setDraggedTask}
                                     allGroups={[PlannedFor.TOMORROW, PlannedFor.TOMORROW_STRETCH_GOAL]}
+                                    onCreateClick={() => openCreateDialog({ plannedFor: PlannedFor.TOMORROW })}
                                 />
                             </div>
                         </div>
@@ -236,6 +257,7 @@ export function WorkPlannerPage() {
                                     draggedTask={draggedTask}
                                     setDraggedTask={setDraggedTask}
                                     allGroups={[PlannedFor.THIS_WEEK, PlannedFor.THIS_WEEK_STRETCH_GOAL]}
+                                    onCreateClick={() => openCreateDialog({ plannedFor: PlannedFor.THIS_WEEK })}
                                 />
                             </div>
                             <div className="flex-1 flex flex-col min-h-0">
@@ -253,6 +275,7 @@ export function WorkPlannerPage() {
                                 onDrop={handleDrop}
                                 draggedTask={draggedTask}
                                 setDraggedTask={setDraggedTask}
+                                onCreateClick={() => openCreateDialog({ plannedFor: undefined })}
                             />
                         </div>
                     </div>

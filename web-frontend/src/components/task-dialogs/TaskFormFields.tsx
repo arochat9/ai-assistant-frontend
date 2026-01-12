@@ -36,6 +36,7 @@ export function TaskFormFields({ values, onChange, showRequired = false }: TaskF
                     onChange={(e) => onChange("taskName", e.target.value)}
                     placeholder="Enter task name"
                     autoComplete="off"
+                    autoFocus
                 />
             </div>
 
