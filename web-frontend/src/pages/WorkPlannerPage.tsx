@@ -120,8 +120,8 @@ function PlannerTable({
                 }
             }}
         >
-            <div className="flex items-center justify-between mb-2 flex-shrink-0">
-                <h3 className="text-lg font-semibold">{title}</h3>
+            <div className="flex items-center justify-between mb-2 flex-shrink-0 h-6">
+                <h3 className="text-base font-semibold">{title}</h3>
                 <div className="flex items-center gap-2">
                     {showSortSelector && onSortChange && (
                         <SortSelector
@@ -294,7 +294,7 @@ export function WorkPlannerPage() {
                                 />
                             </div>
                             <div className="flex-1 flex flex-col min-h-0">
-                                <h3 className="text-lg font-semibold mb-2 flex-shrink-0">Recurring Tasks</h3>
+                                <h3 className="text-base font-semibold mb-2 flex-shrink-0 h-6">Recurring Tasks</h3>
                                 <div className="flex-1 min-h-0 flex items-center justify-center rounded-lg border bg-muted/10">
                                     <p className="text-sm text-muted-foreground">Coming soon</p>
                                 </div>

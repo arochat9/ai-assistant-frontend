@@ -148,6 +148,7 @@ export function CalendarPage() {
                 onToday={handleToday}
                 onViewModeChange={setViewMode}
                 onCreateEvent={handleCreateEvent}
+                eventCount={events.length}
             />
 
             {isLoading ? (

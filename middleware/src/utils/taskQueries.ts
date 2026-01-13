@@ -1,4 +1,4 @@
-import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
+import { Task as OsdkTask, Message } from "@ai-assistant-third-party-app/sdk";
 import { client } from "../config/foundry";
 import { Environment, TaskFilters } from "shared";
 import { convertOsdkTaskToTask } from "./taskConverter";
@@ -45,8 +45,23 @@ export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     }
 
     const tasksQuery = client(OsdkTask).where({ $and: whereConditions });
-    const tasksPage = await tasksQuery.fetchPage({ $pageSize: 100 });
+    // const linkedChatsQuery = tasksQuery.pivotTo("")
+    // const linkedUsersQuery = linkedChatsQuery.pivotTo("users");
+    // const [tasksPage, linkedMessagesPage, linkedChatsPage, linkedUsersPage] = await Promise.all([
+    //     tasksQuery.fetchPage({ $pageSize: 100 }),
+    //     linkedMessagesQuery.fetchPage({ $pageSize: 100 }),
+    //     linkedChatsQuery.fetchPage({ $pageSize: 100 }),
+    //     linkedUsersQuery.fetchPage({ $pageSize: 100 }),
+    // ]);
+
+    // opens before closed, and then newest to oldest
+    const tasksPage = await tasksQuery.fetchPage({
+        $pageSize: 100,
+        $orderBy: { status: "desc", updatedAt: "desc" },
+    });
     const tasks = tasksPage.data.map(convertOsdkTaskToTask);
+
+    // add additional metadata to tasks
 
     return tasks;
 }

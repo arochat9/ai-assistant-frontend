@@ -10,6 +10,7 @@ interface CalendarHeaderProps {
     onToday: () => void;
     onViewModeChange: (mode: ViewMode) => void;
     onCreateEvent: () => void;
+    eventCount?: number;
 }
 
 export function CalendarHeader({
@@ -20,6 +21,7 @@ export function CalendarHeader({
     onToday,
     onViewModeChange,
     onCreateEvent,
+    eventCount,
 }: CalendarHeaderProps) {
     const monthYear = currentDate.toLocaleDateString(undefined, {
         month: "long",
@@ -52,7 +54,14 @@ export function CalendarHeader({
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>
-                <h2 className="text-lg font-semibold min-w-[200px]">{viewMode === "month" ? monthYear : weekRange}</h2>
+                <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold">{viewMode === "month" ? monthYear : weekRange}</h2>
+                    {eventCount !== undefined && (
+                        <span className="text-xs font-medium text-muted-foreground px-2 py-1 rounded-md bg-muted/50">
+                            {eventCount} event{eventCount !== 1 ? "s" : ""}
+                        </span>
+                    )}
+                </div>
             </div>
             <div className="flex gap-2">
                 <Button
