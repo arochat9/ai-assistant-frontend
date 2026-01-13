@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { tasksApi } from "../services/api";
 import { CalendarHeader } from "../components/calendar/CalendarHeader";
@@ -51,36 +51,6 @@ export function CalendarPage() {
             }),
     });
 
-    // Prefetch next 4 months when in month view
-    useEffect(() => {
-        if (viewMode !== "month") return;
-
-        // Calculate next prefetch window (4 months starting from current month + 1)
-        const nextMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-        const nextMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 5, 0);
-        const prefetchRange = {
-            start: getWeekStart(nextMonthStart),
-            end: getWeekEnd(nextMonthEnd),
-        };
-
-        queryClient.prefetchQuery({
-            queryKey: [
-                "tasks",
-                {
-                    taskOrEvent: TaskOrEvent.EVENT,
-                    eventStartBefore: prefetchRange.end,
-                    eventEndAfter: prefetchRange.start,
-                },
-            ],
-            queryFn: () =>
-                tasksApi.getTasks({
-                    taskOrEvent: TaskOrEvent.EVENT,
-                    eventStartBefore: prefetchRange.end,
-                    eventEndAfter: prefetchRange.start,
-                }),
-        });
-    }, [currentDate, viewMode, queryClient]);
-
     // Convert tasks to calendar events
     const events = useMemo<CalendarEvent[]>(() => {
         if (!data?.tasks) return [];
@@ -103,6 +73,31 @@ export function CalendarPage() {
             newDate.setDate(currentDate.getDate() + 7);
         } else {
             newDate.setMonth(currentDate.getMonth() + 1);
+
+            // Prefetch next 4 months for month view
+            const nextMonthStart = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 1);
+            const nextMonthEnd = new Date(newDate.getFullYear(), newDate.getMonth() + 5, 0);
+            const prefetchRange = {
+                start: getWeekStart(nextMonthStart),
+                end: getWeekEnd(nextMonthEnd),
+            };
+
+            queryClient.prefetchQuery({
+                queryKey: [
+                    "tasks",
+                    {
+                        taskOrEvent: TaskOrEvent.EVENT,
+                        eventStartBefore: prefetchRange.end,
+                        eventEndAfter: prefetchRange.start,
+                    },
+                ],
+                queryFn: () =>
+                    tasksApi.getTasks({
+                        taskOrEvent: TaskOrEvent.EVENT,
+                        eventStartBefore: prefetchRange.end,
+                        eventEndAfter: prefetchRange.start,
+                    }),
+            });
         }
         setCurrentDate(newDate);
     };
