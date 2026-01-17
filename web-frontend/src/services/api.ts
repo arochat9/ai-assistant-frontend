@@ -18,23 +18,32 @@ const api = axios.create({
 });
 
 // Automatically convert ISO date strings to Date objects in responses
-api.interceptors.response.use((response) => {
-    const convertDates = (obj: unknown): unknown => {
-        if (!obj || typeof obj !== "object") return obj;
-        if (obj instanceof Date) return obj;
-        if (Array.isArray(obj)) return obj.map(convertDates);
+api.interceptors.response.use(
+    (response) => {
+        const convertDates = (obj: unknown): unknown => {
+            if (!obj || typeof obj !== "object") return obj;
+            if (obj instanceof Date) return obj;
+            if (Array.isArray(obj)) return obj.map(convertDates);
 
-        return Object.fromEntries(
-            Object.entries(obj).map(([k, v]) => [
-                k,
-                typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v) ? new Date(v) : convertDates(v),
-            ])
-        );
-    };
+            return Object.fromEntries(
+                Object.entries(obj).map(([k, v]) => [
+                    k,
+                    typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v) ? new Date(v) : convertDates(v),
+                ])
+            );
+        };
 
-    response.data = convertDates(response.data);
-    return response;
-});
+        response.data = convertDates(response.data);
+        return response;
+    },
+    (error) => {
+        // Extract user-facing error message from API response
+        if (error.response?.data?.details) {
+            error.message = error.response.data.details;
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const tasksApi = {
     // Get all tasks with optional filters

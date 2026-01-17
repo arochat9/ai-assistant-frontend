@@ -106,8 +106,10 @@ export async function createNewTask(req: Request, res: Response) {
         return res.status(201).json({ success: true, task });
     } catch (error) {
         console.error("Error creating task:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to create task";
-        return res.status(500).json({
+        const statusCode = (error as any)?.statusCode || 500;
+        const message = (error as any)?.parameters?.message;
+        const errorMessage = message || (error instanceof Error ? error.message : "Failed to create task");
+        return res.status(statusCode).json({
             error: "Failed to create task",
             details: errorMessage,
         });
@@ -152,8 +154,10 @@ export async function updateExistingTask(req: Request, res: Response) {
         return res.json({ success: true, task });
     } catch (error) {
         console.error("Error updating task:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to update task";
-        return res.status(500).json({
+        const statusCode = (error as any)?.statusCode || 500;
+        const message = (error as any)?.parameters?.message;
+        const errorMessage = message || (error instanceof Error ? error.message : "Failed to update task");
+        return res.status(statusCode).json({
             error: "Failed to update task",
             details: errorMessage,
         });
