@@ -16,10 +16,6 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@ai-assistant-third-party-app/sdk": "^0.44.0",
-        "@osdk/client": "^2.6.0",
-        "@osdk/foundry": "^2.44.0",
-        "@osdk/oauth": "^1.6.0",
         "zod": "^3.22.4"
     }
 }

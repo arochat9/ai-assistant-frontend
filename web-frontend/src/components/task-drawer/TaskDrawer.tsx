@@ -62,6 +62,7 @@ export function TaskDrawer() {
                             <Badge variant={getStatusColor(task.status)}>{task.status}</Badge>
                             <Badge variant="outline">{task.subType}</Badge>
                             <Badge variant="outline">{task.taskOrEvent}</Badge>
+                            {task.isRecurring && <Badge variant="secondary">Recurring</Badge>}
                         </div>
                     </div>
 
