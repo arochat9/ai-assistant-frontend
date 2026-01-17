@@ -71,19 +71,19 @@ export function TasksChangelogPage() {
                     <table className="w-full">
                         <thead className="bg-muted sticky top-0 z-10">
                             <tr>
-                                <th 
+                                <th
                                     className="text-left px-3 py-2 font-medium text-sm whitespace-nowrap"
                                     style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
                                 >
                                     Timestamp
                                 </th>
-                                <th 
+                                <th
                                     className="text-left px-3 py-2 font-medium text-sm whitespace-nowrap"
                                     style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
                                 >
                                     Updated By
                                 </th>
-                                <th 
+                                <th
                                     className="text-left px-3 py-2 font-medium text-sm"
                                     style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
                                 >
