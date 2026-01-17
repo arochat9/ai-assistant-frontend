@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { MessageSquare, ListTodo, Calendar, RefreshCw, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, ListTodo, Calendar, History, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 
 const navItems = [
     {
@@ -24,9 +24,9 @@ const navItems = [
         icon: Calendar,
     },
     {
-        title: "Chores",
-        href: "/chores",
-        icon: RefreshCw,
+        title: "Changelog",
+        href: "/changelog",
+        icon: History,
     },
 ];
 

@@ -4,6 +4,7 @@ import { Badge } from "../ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { useTaskDrawer } from "../../contexts/TaskDrawerContext";
 import { useTaskDialog } from "../../contexts/TaskDialogContext";
+import { TaskHistory } from "./TaskHistory";
 
 export function TaskDrawer() {
     const { isOpen, task, closeDrawer } = useTaskDrawer();
@@ -203,6 +204,9 @@ export function TaskDrawer() {
                             </div>
                         )}
                     </div>
+
+                    {/* Change History */}
+                    <TaskHistory taskId={task.taskId} />
                 </div>
             </SheetContent>
         </Sheet>

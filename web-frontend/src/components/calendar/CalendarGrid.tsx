@@ -9,11 +9,19 @@ interface CalendarGridProps {
     events: CalendarEvent[];
     onEventClick: (event: CalendarEvent) => void;
     onUpdateTime?: (eventId: string, startTime: Date, endTime: Date, approvalStatus?: EventApprovalStatus) => void;
+    onCompleteEvent?: (event: CalendarEvent) => void;
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function CalendarGrid({ currentDate, viewMode, events, onEventClick, onUpdateTime }: CalendarGridProps) {
+export function CalendarGrid({
+    currentDate,
+    viewMode,
+    events,
+    onEventClick,
+    onUpdateTime,
+    onCompleteEvent,
+}: CalendarGridProps) {
     const days = viewMode === "week" ? getWeekDays(currentDate) : getMonthDays(currentDate);
     const today = new Date();
 
@@ -38,6 +46,7 @@ export function CalendarGrid({ currentDate, viewMode, events, onEventClick, onUp
                                 event={event}
                                 onClick={onEventClick}
                                 onUpdateTime={onUpdateTime}
+                                onComplete={onCompleteEvent}
                             />
                         ))}
                     </div>

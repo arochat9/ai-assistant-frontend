@@ -107,3 +107,31 @@ export const ErrorResponseSchema = z.object({
 });
 
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
+
+// TaskChangelog Interface - field-level change record
+export interface TaskChangelog {
+    changelogId: string;
+    snapshotId: string; // ID of the TaskChangelog snapshot (groups related field changes)
+    taskId: string;
+    fieldName: string; // The field that changed
+    oldValue?: string; // Previous value
+    newValue?: string; // New value
+    timestamp: Date; // When the change happened
+    updatedBy?: string; // Who made the change
+}
+
+// TaskChangelog Filters Schema
+export const TaskChangelogFiltersSchema = z.object({
+    taskId: z.string().optional(),
+    changelogIds: z.array(z.string()).optional(),
+});
+
+export type TaskChangelogFilters = z.infer<typeof TaskChangelogFiltersSchema>;
+
+// TaskChangelog Response Schema
+export const TaskChangelogsResponseSchema = z.object({
+    changelogs: z.array(z.custom<TaskChangelog>()),
+    nextPageToken: z.string().optional(),
+});
+
+export type TaskChangelogsResponse = z.infer<typeof TaskChangelogsResponseSchema>;

@@ -1,19 +1,43 @@
-import { useQuery } from "@tanstack/react-query";
 import { History } from "lucide-react";
-import { tasksApi } from "../services/api";
-import { useTaskDrawer } from "../contexts/TaskDrawerContext";
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../ui/badge";
+import { useEffect, useState } from "react";
+import { tasksApi } from "../../services/api";
 import type { TaskChangelog } from "shared";
 
-export function ChoresPage() {
-    const { openDrawer } = useTaskDrawer();
+interface TaskHistoryProps {
+    taskId: string;
+}
 
-    const { data, isLoading } = useQuery({
-        queryKey: ["changelogs"],
-        queryFn: () => tasksApi.getTaskChangelogs({}),
-    });
+export function TaskHistory({ taskId }: TaskHistoryProps) {
+    const [changelogs, setChangelogs] = useState<TaskChangelog[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const changelogs = data?.changelogs ?? [];
+    useEffect(() => {
+        if (!taskId) return;
+
+        let cancelled = false;
+
+        const fetchHistory = async () => {
+            try {
+                const response = await tasksApi.getTaskChangelogs({ taskId });
+                if (!cancelled) {
+                    setChangelogs(response.changelogs);
+                    setLoading(false);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error("Failed to fetch task history:", error);
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchHistory();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [taskId]);
 
     // Group changes by snapshotId
     const groupedChanges = changelogs.reduce((groups, change) => {
@@ -32,50 +56,33 @@ export function ChoresPage() {
         return timeB.getTime() - timeA.getTime();
     });
 
-    const handleRowClick = async (taskId: string) => {
-        try {
-            const response = await tasksApi.getTaskById(taskId);
-            openDrawer(response.task);
-        } catch (error) {
-            console.error("Failed to fetch task:", error);
-        }
-    };
-
     const totalChanges = changelogs.length;
 
     return (
-        <div className="h-full p-8">
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold mb-2">Tasks Changelog</h2>
-                    <p className="text-muted-foreground">View all task changes and updates</p>
-                </div>
-                {!isLoading && totalChanges > 0 && (
-                    <Badge variant="secondary" className="text-sm">
+        <div>
+            <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Change History
+                </h4>
+                {!loading && totalChanges > 0 && (
+                    <Badge variant="secondary" className="text-xs">
                         {totalChanges} {totalChanges === 1 ? "change" : "changes"}
                     </Badge>
                 )}
             </div>
-
-            {isLoading ? (
-                <p className="text-muted-foreground">Loading changelog...</p>
+            {loading ? (
+                <p className="text-sm text-muted-foreground">Loading history...</p>
             ) : totalChanges === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <History className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No changes recorded yet</p>
-                </div>
+                <p className="text-sm text-muted-foreground">No changes recorded</p>
             ) : (
                 <div className="space-y-3">
                     {sortedGroups.map((group) => {
                         const firstChange = group[0];
                         return (
-                            <div
-                                key={firstChange.snapshotId}
-                                onClick={() => handleRowClick(firstChange.taskId)}
-                                className="border rounded-lg p-4 bg-card hover:bg-muted/50 cursor-pointer transition-colors space-y-2"
-                            >
+                            <div key={firstChange.snapshotId} className="border rounded-lg p-3 bg-muted/30 space-y-2">
                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-xs text-muted-foreground">
                                         {(firstChange.timestamp instanceof Date
                                             ? firstChange.timestamp
                                             : new Date(firstChange.timestamp)

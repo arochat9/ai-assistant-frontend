@@ -121,6 +121,8 @@ export async function createNewTask(req: Request, res: Response) {
  */
 export async function updateExistingTask(req: Request, res: Response) {
     try {
+        console.log("Update task request body:", JSON.stringify(req.body, null, 2));
+
         // Parse date strings to Date objects and normalize empty strings
         const normalizedBody = normalizeOptionalFields(req.body);
         const bodyWithDates = parseDateFields(normalizedBody);
