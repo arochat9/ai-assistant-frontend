@@ -18,14 +18,16 @@ interface TaskFormFieldsProps {
         plannedFor?: string;
         source?: string;
         tags?: string;
+        isRecurring?: boolean;
     };
-    onChange: (field: string, value: string) => void;
+    onChange: (field: string, value: string | boolean) => void;
     showRequired?: boolean;
     onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 export function TaskFormFields({ values, onChange, showRequired = false, onKeyDown }: TaskFormFieldsProps) {
     const isEvent = values.taskOrEvent === TaskOrEvent.EVENT;
+    const isRecurring = values.isRecurring ?? false;
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey && e.currentTarget.id !== "userNotes") {
@@ -35,21 +37,49 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
 
     return (
         <>
-            <div>
-                <Label htmlFor="taskName">Task Name {showRequired && "*"}</Label>
-                <Input
-                    id="taskName"
-                    required={showRequired}
-                    value={values.taskName}
-                    onChange={(e) => onChange("taskName", e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Enter task name"
-                    autoComplete="off"
-                    autoFocus
-                />
+            <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                        id="isRecurring"
+                        type="checkbox"
+                        checked={isRecurring}
+                        onChange={(e) => onChange("isRecurring", e.target.checked)}
+                        className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+                <Label htmlFor="isRecurring" className="cursor-pointer text-sm">
+                    Recurring Task
+                </Label>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
+                <div className="md:col-span-2">
+                    <Label htmlFor="taskName">Task Name {showRequired && "*"}</Label>
+                    <Input
+                        id="taskName"
+                        required={showRequired}
+                        value={values.taskName}
+                        onChange={(e) => onChange("taskName", e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Enter task name"
+                        autoComplete="off"
+                        autoFocus
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select id="status" value={values.status} onChange={(e) => onChange("status", e.target.value)}>
+                        {Object.values(TaskStatus).map((status) => (
+                            <option key={status} value={status}>
+                                {status}
+                            </option>
+                        ))}
+                    </Select>
+                </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
                 <div>
                     <Label htmlFor="taskOrEvent">Type {showRequired && "*"}</Label>
                     <Select
@@ -57,6 +87,7 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
                         required={showRequired}
                         value={values.taskOrEvent}
                         onChange={(e) => onChange("taskOrEvent", e.target.value)}
+                        disabled={isRecurring}
                     >
                         {Object.values(TaskOrEvent).map((type) => (
                             <option key={type} value={type}>
@@ -81,26 +112,27 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
                         ))}
                     </Select>
                 </div>
+                <div>
+                    <Label htmlFor="tags">Tags</Label>
+                    <Input
+                        id="tags"
+                        value={values.tags || ""}
+                        onChange={(e) => onChange("tags", e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="work, urgent, personal"
+                        autoComplete="off"
+                    />
+                </div>
             </div>
 
-            <div>
-                <Label htmlFor="status">Status</Label>
-                <Select id="status" value={values.status} onChange={(e) => onChange("status", e.target.value)}>
-                    {Object.values(TaskStatus).map((status) => (
-                        <option key={status} value={status}>
-                            {status}
-                        </option>
-                    ))}
-                </Select>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
                 <div>
                     <Label htmlFor="plannedFor">Planned For</Label>
                     <Select
                         id="plannedFor"
                         value={values.plannedFor || ""}
                         onChange={(e) => onChange("plannedFor", e.target.value)}
+                        disabled={isRecurring}
                     >
                         <option value="">Not planned</option>
                         {Object.values(PlannedFor).map((plan) => (
@@ -116,6 +148,7 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
                         id="source"
                         value={values.source || ""}
                         onChange={(e) => onChange("source", e.target.value)}
+                        disabled={isRecurring}
                     >
                         <option value="">Select source...</option>
                         {Object.values(Source).map((src) => (
@@ -124,6 +157,16 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
                             </option>
                         ))}
                     </Select>
+                </div>
+                <div>
+                    <Label htmlFor="taskDueTime">Due Date</Label>
+                    <Input
+                        id="taskDueTime"
+                        type="datetime-local"
+                        value={values.taskDueTime || ""}
+                        onChange={(e) => onChange("taskDueTime", e.target.value)}
+                        disabled={isRecurring}
+                    />
                 </div>
             </div>
 
@@ -136,28 +179,6 @@ export function TaskFormFields({ values, onChange, showRequired = false, onKeyDo
                     onKeyDown={handleKeyDown}
                     placeholder="Add notes or context... (Shift+Enter for new line)"
                     rows={3}
-                />
-            </div>
-
-            <div>
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
-                <Input
-                    id="tags"
-                    value={values.tags || ""}
-                    onChange={(e) => onChange("tags", e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="work, urgent task, personal"
-                    autoComplete="off"
-                />
-            </div>
-
-            <div>
-                <Label htmlFor="taskDueTime">Due Date</Label>
-                <Input
-                    id="taskDueTime"
-                    type="datetime-local"
-                    value={values.taskDueTime || ""}
-                    onChange={(e) => onChange("taskDueTime", e.target.value)}
                 />
             </div>
 

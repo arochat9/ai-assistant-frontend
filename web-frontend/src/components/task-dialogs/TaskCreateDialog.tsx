@@ -20,15 +20,28 @@ const getDefaultFormData = (defaults?: Partial<CreateTaskInput>): CreateTaskInpu
     taskOrEvent: TaskOrEvent.TASK,
     subType: SubType.CHORE,
     source: Source.USER,
+    isRecurring: false,
     ...defaults,
 });
 
 export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defaults }: TaskCreateDialogProps) {
     const [formData, setFormData] = useState<CreateTaskInput>(() => getDefaultFormData(defaults));
 
-    const handleChange = (field: string, value: string) => {
-        if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
-            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value) : undefined }));
+    const handleChange = (field: string, value: string | boolean) => {
+        if (field === "isRecurring") {
+            setFormData((prev) => {
+                const newData = { ...prev, isRecurring: value as boolean };
+                if (value) {
+                    // Clear fields that can't be set for recurring tasks
+                    newData.plannedFor = undefined;
+                    newData.taskDueTime = undefined;
+                    newData.taskOrEvent = TaskOrEvent.TASK;
+                    newData.source = Source.USER;
+                }
+                return newData;
+            });
+        } else if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
+            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value as string) : undefined }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
         }
@@ -66,7 +79,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defa
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create New Task</DialogTitle>
                     <DialogDescription>Add a new task or event to your list</DialogDescription>
@@ -90,6 +103,7 @@ export function TaskCreateDialog({ open, onOpenChange, onSubmit, isLoading, defa
                                     : "",
                             eventApprovalStatus: formData.eventApprovalStatus || "",
                             tags: Array.isArray(formData.tags) ? formData.tags.join(", ") : formData.tags,
+                            isRecurring: formData.isRecurring,
                         }}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}

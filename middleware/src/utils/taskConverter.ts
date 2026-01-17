@@ -6,7 +6,7 @@ import { Task, TaskStatus, SubType, TaskOrEvent, EventApprovalStatus, PlannedFor
  * Converts an OSDK Task instance to our custom Task interface
  * Excludes runId and environment fields
  */
-export function convertOsdkTaskToTask(osdkTask: Osdk.Instance<OsdkTask>): Task {
+export function convertOsdkTaskToTask(osdkTask: Osdk.Instance<OsdkTask>, chats: string[] | undefined): Task {
     return {
         taskId: osdkTask.taskId,
         taskName: osdkTask.taskName ?? "",
@@ -27,5 +27,6 @@ export function convertOsdkTaskToTask(osdkTask: Osdk.Instance<OsdkTask>): Task {
         source: osdkTask.source as Source | undefined,
         tags: osdkTask.tags,
         userNotes: osdkTask.userNotes,
+        chats: chats,
     };
 }

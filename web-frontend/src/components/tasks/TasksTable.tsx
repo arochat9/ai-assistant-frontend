@@ -59,6 +59,19 @@ export function TasksTable({ tasks, sortKey, sortDirection, onSortChange }: Task
             cell: (value) => <span className="font-medium">{(value as string) || "Untitled"}</span>,
         },
         {
+            key: "chats",
+            header: "Chat(s)",
+            width: "160px",
+            sortable: false,
+            editable: false,
+            accessor: (task) => task.chats,
+            cell: (value) => {
+                const chats = value as string[] | undefined;
+                if (!chats || chats.length === 0) return "-";
+                return <span className="text-sm text-muted-foreground">{chats.join(", ")}</span>;
+            },
+        },
+        {
             key: "subType",
             header: "Subtype",
             width: "130px",

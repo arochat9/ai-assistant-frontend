@@ -72,6 +72,13 @@ export function CalendarEventPopover({ event, onUpdateTime, onOpenDrawer, onClos
                 </div>
             )}
 
+            {event.chats && event.chats.length > 0 && (
+                <div>
+                    <Label className="text-xs text-muted-foreground">Chat(s)</Label>
+                    <p className="text-sm mt-1">{event.chats.join(", ")}</p>
+                </div>
+            )}
+
             <div className="border-t pt-3">
                 <Label className="text-xs text-muted-foreground mb-2 block">Event Time</Label>
                 <div className="space-y-2">

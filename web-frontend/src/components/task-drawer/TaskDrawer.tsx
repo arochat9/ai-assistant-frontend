@@ -111,6 +111,14 @@ export function TaskDrawer() {
                         </div>
                     )}
 
+                    {/* Chats */}
+                    {task.chats && task.chats.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Chat(s)</h4>
+                            <p className="text-sm">{task.chats.join(", ")}</p>
+                        </div>
+                    )}
+
                     {/* Due Date */}
                     <div>
                         <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">

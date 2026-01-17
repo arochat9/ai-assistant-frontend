@@ -14,9 +14,8 @@ import {
     TaskActionResponse,
     Environment,
 } from "shared";
-import { convertOsdkTaskToTask } from "../utils/taskConverter";
 import { parseDateFields, normalizeOptionalFields } from "../utils/requestParser";
-import { fetchTasks } from "../utils/taskQueries";
+import { fetchTasks, fetchTaskById } from "../utils/taskQueries";
 
 /**
  * POST endpoint that fetches tasks with optional filtering
@@ -55,14 +54,7 @@ export async function getTaskById(req: Request, res: Response) {
     try {
         const { id } = req.params;
 
-        const osdkTask = await client(OsdkTask).fetchOne(id);
-
-        if (!osdkTask) {
-            return res.status(404).json({ error: "Task not found" });
-        }
-
-        // Convert OSDK task to custom Task object
-        const task = convertOsdkTaskToTask(osdkTask);
+        const task = await fetchTaskById(id);
 
         const response: TaskResponse = { task };
         return res.json(response);
@@ -109,16 +101,8 @@ export async function createNewTask(req: Request, res: Response) {
 
         // Fetch the created task using the primary key from the action response
         const createdTaskRef = result.addedObjects[0];
-        const osdkTask = await client(OsdkTask).fetchOne(createdTaskRef.primaryKey as string);
+        const task = await fetchTaskById(createdTaskRef.primaryKey as string);
 
-        if (!osdkTask) {
-            return res.status(500).json({
-                error: "Failed to fetch created task",
-                details: "Task was created but could not be retrieved",
-            });
-        }
-
-        const task = convertOsdkTaskToTask(osdkTask);
         return res.status(201).json({ success: true, task });
     } catch (error) {
         console.error("Error creating task:", error);
@@ -163,16 +147,8 @@ export async function updateExistingTask(req: Request, res: Response) {
 
         // Fetch the updated task using the primary key from the action response
         const updatedTaskRef = result.modifiedObjects[0];
-        const osdkTask = await client(OsdkTask).fetchOne(updatedTaskRef.primaryKey as string);
+        const task = await fetchTaskById(updatedTaskRef.primaryKey as string);
 
-        if (!osdkTask) {
-            return res.status(500).json({
-                error: "Failed to fetch updated task",
-                details: "Task was updated but could not be retrieved",
-            });
-        }
-
-        const task = convertOsdkTaskToTask(osdkTask);
         return res.json({ success: true, task });
     } catch (error) {
         console.error("Error updating task:", error);

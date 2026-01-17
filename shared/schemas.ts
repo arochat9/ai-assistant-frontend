@@ -22,6 +22,8 @@ export interface Task {
     source?: Source;
     tags?: string[];
     userNotes?: string;
+    chats?: string[];
+    isRecurring?: boolean;
 }
 
 // Task Filters Schema
@@ -35,6 +37,7 @@ export const TaskFiltersSchema = z.object({
     eventStartBefore: z.date().optional(),
     eventEndAfter: z.date().optional(),
     eventEndBefore: z.date().optional(),
+    isRecurring: z.boolean().optional(),
 });
 
 export type TaskFilters = z.infer<typeof TaskFiltersSchema>;
@@ -53,6 +56,7 @@ export const CreateTaskSchema = z.object({
     taskName: z.string().optional(),
     taskOrEvent: z.nativeEnum(TaskOrEvent),
     userNotes: z.string().optional(),
+    isRecurring: z.boolean(),
 });
 
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;

@@ -1,8 +1,9 @@
-import { Task as OsdkTask, Message } from "@ai-assistant-third-party-app/sdk";
+import { Task as OsdkTask, Message, User, Chat } from "@ai-assistant-third-party-app/sdk";
 import { client } from "../config/foundry";
 import { Environment, TaskFilters } from "shared";
 import { convertOsdkTaskToTask } from "./taskConverter";
 import type { Task } from "shared";
+import { Osdk } from "@osdk/api";
 
 /**
  * Shared utility to fetch tasks from Foundry with filters
@@ -10,6 +11,13 @@ import type { Task } from "shared";
  */
 export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     const whereConditions: Array<Record<string, unknown>> = [{ environment: { $eq: Environment.PRODUCTION } }];
+
+    // exclude is recurring unless it's specifically requested
+    if (filters.isRecurring == true) {
+        whereConditions.push({ isRecurring: { $eq: true } });
+    } else {
+        whereConditions.push({ isRecurring: { $ne: true } });
+    }
 
     if (filters.taskOrEvent) {
         whereConditions.push({ taskOrEvent: { $eq: filters.taskOrEvent } });
@@ -45,34 +53,62 @@ export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     }
 
     const tasksQuery = client(OsdkTask).where({ $and: whereConditions });
-    // const linkedChatsQuery = tasksQuery.pivotTo("")
-    // const linkedUsersQuery = linkedChatsQuery.pivotTo("users");
-    // const [tasksPage, linkedMessagesPage, linkedChatsPage, linkedUsersPage] = await Promise.all([
-    //     tasksQuery.fetchPage({ $pageSize: 100 }),
-    //     linkedMessagesQuery.fetchPage({ $pageSize: 100 }),
-    //     linkedChatsQuery.fetchPage({ $pageSize: 100 }),
-    //     linkedUsersQuery.fetchPage({ $pageSize: 100 }),
-    // ]);
+    const linkedChatsQuery = tasksQuery.pivotTo("chat");
+    const linkedUsersQuery = linkedChatsQuery.pivotTo("users");
 
     // opens before closed, and then newest to oldest
-    const tasksPage = await tasksQuery.fetchPage({
+    const tasksPromise = tasksQuery.fetchPage({
         $pageSize: 100,
         $orderBy: { status: "desc", updatedAt: "desc" },
     });
-    const tasks = tasksPage.data.map(convertOsdkTaskToTask);
 
-    // add additional metadata to tasks
+    const [tasksPage, linkedChatsPage, linkedUsersPage] = await Promise.all([
+        tasksPromise,
+        linkedChatsQuery.fetchPage({ $pageSize: 100 }),
+        linkedUsersQuery.fetchPage({ $pageSize: 100 }),
+    ]);
 
-    return tasks;
+    const chatMap = createChatMap(linkedChatsPage.data ?? [], linkedUsersPage.data ?? []);
+
+    return taskConverterWrapper(tasksPage.data ?? [], chatMap);
 }
 
-/**
- * Shared utility to fetch a single task by ID
- */
 export async function fetchTaskById(taskId: string): Promise<Task> {
-    const osdkTask = await client(OsdkTask).fetchOne(taskId);
+    const [osdkTask, linkedChatsPage, linkedUsersPage] = await Promise.all([
+        client(OsdkTask).fetchOne(taskId),
+        client(OsdkTask).pivotTo("chat").fetchPage({ $pageSize: 100 }),
+        client(OsdkTask).pivotTo("chat").pivotTo("users").fetchPage({ $pageSize: 100 }),
+    ]);
     if (!osdkTask) {
         throw new Error(`Task with ID ${taskId} not found`);
     }
-    return convertOsdkTaskToTask(osdkTask);
+
+    const chatMap = createChatMap(linkedChatsPage.data ?? [], linkedUsersPage.data ?? []);
+
+    return taskConverterWrapper([osdkTask], chatMap)[0];
+}
+
+function createChatMap(chats: Osdk.Instance<Chat>[], users: Osdk.Instance<User>[]): Map<string, string> {
+    const userMap = new Map<string, string | undefined>(users.map((user) => [user.userId, user.name]));
+
+    const chatMap = new Map<string, string>();
+    chats.forEach((chat) => {
+        const chatName = chat.chatDisplayName;
+        if (chatName) {
+            chatMap.set(chat.chatId, chatName);
+        } else {
+            const participantNames = (chat.userIds ?? [])
+                .filter((userId) => userId !== "+19144177189")
+                .map((userId) => userMap.get(userId) ?? userId);
+            chatMap.set(chat.chatId, participantNames.join(", "));
+        }
+    });
+    return chatMap;
+}
+
+function taskConverterWrapper(osdkTasks: Osdk.Instance<OsdkTask>[], chatMap: Map<string, string>): Task[] {
+    return osdkTasks.map((task) => {
+        const chats = task.chatIds?.map((chatId) => chatMap.get(chatId) ?? "Chat not found");
+        return convertOsdkTaskToTask(task, chats);
+    });
 }
