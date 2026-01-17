@@ -10,8 +10,10 @@ import { useTaskDialog } from "../contexts/TaskDialogContext";
 import { TaskOrEvent } from "shared";
 import type { TaskFilters as TaskFiltersType } from "shared";
 
+const DEFAULT_FILTERS: TaskFiltersType = { isRecurring: false };
+
 export function TasksPage() {
-    const [filters, setFilters] = useState<TaskFiltersType>({});
+    const [filters, setFilters] = useState<TaskFiltersType>(DEFAULT_FILTERS);
     const [sortKey, setSortKey] = useState<string>("createdAt");
     const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
     const { openCreateDialog } = useTaskDialog();
@@ -30,7 +32,7 @@ export function TasksPage() {
         setSortDirection(direction);
     }, []);
 
-    const clearFilters = useCallback(() => setFilters({}), []);
+    const clearFilters = useCallback(() => setFilters(DEFAULT_FILTERS), []);
 
     return (
         <div className="h-full p-8 flex flex-col">

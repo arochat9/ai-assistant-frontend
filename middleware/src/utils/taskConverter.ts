@@ -28,5 +28,6 @@ export function convertOsdkTaskToTask(osdkTask: Osdk.Instance<OsdkTask>, chats: 
         tags: osdkTask.tags,
         userNotes: osdkTask.userNotes,
         chats: chats,
+        isRecurring: osdkTask.isRecurring,
     };
 }

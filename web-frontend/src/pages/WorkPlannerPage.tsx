@@ -186,12 +186,7 @@ export function WorkPlannerPage() {
         queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK }),
     });
 
-    const { data: recurringData } = useQuery({
-        queryKey: ["tasks", { isRecurring: true }],
-        queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK, isRecurring: true, status: TaskStatus.OPEN }),
-    });
-
-    const { updateMutation } = useTaskMutations({});
+    const { updateMutation, createMutation } = useTaskMutations({});
     const { openCreateDialog } = useTaskDialog();
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
@@ -218,11 +213,19 @@ export function WorkPlannerPage() {
             (task) => task.plannedFor === PlannedFor.THIS_WEEK || task.plannedFor === PlannedFor.THIS_WEEK_STRETCH_GOAL
         ) || [];
 
-    const unplannedTasks = data?.tasks.filter((task) => !task.plannedFor) || [];
+    const unplannedTasks = data?.tasks.filter((task) => !task.plannedFor && !task.isRecurring) || [];
 
-    const recurringTasks = recurringData?.tasks || [];
+    const recurringTasks = data?.tasks.filter((task) => task.isRecurring && task.status === TaskStatus.OPEN) || [];
 
     const handleDrop = async (task: Task, newPlannedFor?: PlannedFor) => {
+        if (task.isRecurring) {
+            await createMutation.mutateAsync({
+                ...task,
+                plannedFor: newPlannedFor,
+                isRecurring: false,
+            });
+            return;
+        }
         if (task.plannedFor === newPlannedFor) return;
 
         await updateMutation.mutateAsync({

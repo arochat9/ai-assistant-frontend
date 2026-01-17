@@ -12,13 +12,13 @@ import { Osdk } from "@osdk/api";
 export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     const whereConditions: Array<Record<string, unknown>> = [{ environment: { $eq: Environment.PRODUCTION } }];
 
-    // exclude is recurring unless it's specifically requested
-    if (filters.isRecurring == true) {
-        whereConditions.push({ isRecurring: { $eq: true } });
-    } else {
-        whereConditions.push({ isRecurring: { $ne: true } });
+    if (filters.isRecurring !== undefined) {
+        if (filters.isRecurring === false) {
+            whereConditions.push({ $or: [{ isRecurring: { $eq: false } }, { isRecurring: { $isNull: true } }] });
+        } else {
+            whereConditions.push({ isRecurring: { $eq: true } });
+        }
     }
-
     if (filters.taskOrEvent) {
         whereConditions.push({ taskOrEvent: { $eq: filters.taskOrEvent } });
     }
