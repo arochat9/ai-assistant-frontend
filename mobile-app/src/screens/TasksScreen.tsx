@@ -50,7 +50,7 @@ export function TasksScreen() {
     }, [filters]);
 
     const handleTaskPress = useCallback((task: Task) => {
-        navigation.navigate("TaskForm", { task });
+        navigation.navigate("TaskDetail", { task });
     }, [navigation]);
 
     const handleCreateTask = useCallback(() => {

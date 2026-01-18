@@ -5,14 +5,14 @@ export const colors = {
     primaryLight: "#818cf8",
 
     // Background colors
-    background: "#0f172a", // Dark slate
-    surface: "#1e293b",
-    surfaceElevated: "#334155",
+    background: "#0a0a0a", // Almost black
+    surface: "#161616",
+    surfaceElevated: "#222222",
 
     // Text colors
-    text: "#f8fafc",
-    textSecondary: "#94a3b8",
-    textMuted: "#64748b",
+    text: "#f5f5f5",
+    textSecondary: "#a0a0a0",
+    textMuted: "#666666",
 
     // Status colors
     success: "#22c55e",
@@ -23,14 +23,14 @@ export const colors = {
     // Task status colors
     statusOpen: "#3b82f6",
     statusClosed: "#22c55e",
-    statusBacklogged: "#64748b",
+    statusBacklogged: "#666666",
 
     // Border
-    border: "#334155",
-    borderLight: "#475569",
+    border: "#2a2a2a",
+    borderLight: "#3a3a3a",
 
     // Tab bar
-    tabBarBackground: "#1e293b",
+    tabBarBackground: "#161616",
     tabBarActive: "#6366f1",
-    tabBarInactive: "#64748b",
+    tabBarInactive: "#666666",
 };

@@ -4,7 +4,6 @@ WORKDIR /app
 
 # Copy and install shared package dependencies first
 COPY shared/package*.json ../shared/
-COPY shared/.npmrc ../shared/
 RUN --mount=type=secret,id=FOUNDRY_TOKEN \
     FOUNDRY_TOKEN="$(cat /run/secrets/FOUNDRY_TOKEN)" npm ci --prefix ../shared
 

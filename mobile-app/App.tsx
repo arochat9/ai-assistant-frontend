@@ -6,20 +6,28 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AgentScreen } from "./src/screens/AgentScreen";
 import { TasksScreen } from "./src/screens/TasksScreen";
+import { TaskDetailScreen } from "./src/screens/TaskDetailScreen";
 import { TaskFormScreen } from "./src/screens/TaskFormScreen";
 import { WorkPlannerScreen } from "./src/screens/WorkPlannerScreen";
 import { CalendarScreen } from "./src/screens/CalendarScreen";
 import { ChoresScreen } from "./src/screens/ChoresScreen";
 import { colors } from "./src/theme";
-import type { RootTabParamList, TasksStackParamList } from "./src/navigation/types";
+import type { RootTabParamList, TasksStackParamList, CalendarStackParamList } from "./src/navigation/types";
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const TasksStack = createNativeStackNavigator<TasksStackParamList>();
+const PlannerStack = createNativeStackNavigator<TasksStackParamList>();
+const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
 
 function TasksStackNavigator() {
     return (
         <TasksStack.Navigator screenOptions={{ headerShown: false }}>
             <TasksStack.Screen name="TasksList" component={TasksScreen} />
+            <TasksStack.Screen
+                name="TaskDetail"
+                component={TaskDetailScreen}
+                options={{ animation: "slide_from_right" }}
+            />
             <TasksStack.Screen
                 name="TaskForm"
                 component={TaskFormScreen}
@@ -28,6 +36,38 @@ function TasksStackNavigator() {
         </TasksStack.Navigator>
     );
 }
+
+function PlannerStackNavigator() {
+    return (
+        <PlannerStack.Navigator screenOptions={{ headerShown: false }}>
+            <PlannerStack.Screen name="PlannerMain" component={WorkPlannerScreen} />
+            <PlannerStack.Screen
+                name="TaskDetail"
+                component={TaskDetailScreen}
+                options={{ animation: "slide_from_right" }}
+            />
+            <PlannerStack.Screen
+                name="TaskForm"
+                component={TaskFormScreen}
+                options={{ animation: "slide_from_right" }}
+            />
+        </PlannerStack.Navigator>
+    );
+}
+
+function CalendarStackNavigator() {
+    return (
+        <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
+            <CalendarStack.Screen name="CalendarMain" component={CalendarScreen} />
+            <CalendarStack.Screen
+                name="CalendarDetail"
+                component={TaskDetailScreen}
+                options={{ animation: "slide_from_right" }}
+            />
+        </CalendarStack.Navigator>
+    );
+}
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -66,12 +106,12 @@ export default function App() {
                     />
                     <Tab.Screen
                         name="WorkPlanner"
-                        component={WorkPlannerScreen}
+                        component={PlannerStackNavigator}
                         options={{ tabBarLabel: "Planner" }}
                     />
                     <Tab.Screen
                         name="Calendar"
-                        component={CalendarScreen}
+                        component={CalendarStackNavigator}
                         options={{ tabBarLabel: "Calendar" }}
                     />
                     <Tab.Screen

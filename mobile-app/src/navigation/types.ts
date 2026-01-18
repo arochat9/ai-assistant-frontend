@@ -12,10 +12,18 @@ export type RootTabParamList = {
     Chores: undefined;
 };
 
-// Stack Navigator for Tasks
+// Stack Navigator for Tasks (shared by Tasks and Planner tabs)
 export type TasksStackParamList = {
     TasksList: undefined;
-    TaskForm: { task?: Task };
+    PlannerMain: undefined;
+    TaskDetail: { task: Task };
+    TaskForm: { task?: Task; defaultPlannedFor?: string; defaultIsRecurring?: boolean };
+};
+
+// Stack Navigator for Calendar
+export type CalendarStackParamList = {
+    CalendarMain: undefined;
+    CalendarDetail: { task: Task };
 };
 
 // Screen props

@@ -1,17 +1,329 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
-import { colors, spacing, fontSize } from "../theme";
+import React, { useState, useCallback, useMemo } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    Pressable,
+    ActivityIndicator,
+    SafeAreaView,
+    Modal,
+    RefreshControl,
+} from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { tasksApi } from "../services/api";
+import { useTaskMutations } from "../hooks/useTaskMutations";
+import { colors, spacing, fontSize, borderRadius } from "../theme";
+import {
+    Task,
+    TaskStatus,
+    TaskOrEvent,
+    PlannedFor,
+    Source,
+} from "../types";
+
+type PlannerSection = {
+    key: string;
+    title: string;
+    plannedFor?: PlannedFor;
+    isRecurring?: boolean;
+    isUnplanned?: boolean;
+    tasks: Task[];
+};
 
 export function WorkPlannerScreen() {
+    const navigation = useNavigation<NativeStackNavigationProp<any>>();
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [showMoveModal, setShowMoveModal] = useState(false);
+
+    const { data, isLoading, error, refetch, isRefetching } = useQuery({
+        queryKey: ["tasks"],
+        queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK }),
+    });
+
+    const { updateMutation, createMutation } = useTaskMutations({});
+
+    const sections: PlannerSection[] = useMemo(() => {
+        if (!data?.tasks) return [];
+
+        const todayTasks = data.tasks.filter(
+            (t) => t.plannedFor === PlannedFor.TODAY || t.plannedFor === PlannedFor.TODAY_STRETCH_GOAL
+        );
+        const tomorrowTasks = data.tasks.filter(
+            (t) => t.plannedFor === PlannedFor.TOMORROW || t.plannedFor === PlannedFor.TOMORROW_STRETCH_GOAL
+        );
+        const weekTasks = data.tasks.filter(
+            (t) => t.plannedFor === PlannedFor.THIS_WEEK || t.plannedFor === PlannedFor.THIS_WEEK_STRETCH_GOAL
+        );
+        const recurringTasks = data.tasks.filter((t) => t.isRecurring && t.status === TaskStatus.OPEN);
+        const unplannedTasks = data.tasks.filter((t) => !t.plannedFor && !t.isRecurring);
+
+        return [
+            { key: "today", title: "Today", plannedFor: PlannedFor.TODAY, tasks: todayTasks },
+            { key: "tomorrow", title: "Tomorrow", plannedFor: PlannedFor.TOMORROW, tasks: tomorrowTasks },
+            { key: "week", title: "This Week", plannedFor: PlannedFor.THIS_WEEK, tasks: weekTasks },
+            { key: "recurring", title: "Recurring", isRecurring: true, tasks: recurringTasks },
+            { key: "unplanned", title: "Unplanned", isUnplanned: true, tasks: unplannedTasks },
+        ];
+    }, [data?.tasks]);
+
+    const handleCreateTask = useCallback((plannedFor?: PlannedFor, isRecurring?: boolean) => {
+        navigation.navigate("TaskForm", { defaultPlannedFor: plannedFor, defaultIsRecurring: isRecurring });
+    }, [navigation]);
+
+    const handleTaskPress = useCallback((task: Task) => {
+        navigation.navigate("TaskDetail", { task });
+    }, [navigation]);
+
+    const handleMoveTask = useCallback((task: Task) => {
+        setSelectedTask(task);
+        setShowMoveModal(true);
+    }, []);
+
+    const handleToggleStatus = useCallback((task: Task) => {
+        const newStatus = task.status === TaskStatus.CLOSED ? TaskStatus.OPEN : TaskStatus.CLOSED;
+        updateMutation.mutate({
+            taskId: task.taskId,
+            taskOrEvent: task.taskOrEvent,
+            status: newStatus,
+            subType: task.subType,
+        });
+    }, [updateMutation]);
+
+    const handleMoveTo = useCallback(async (plannedFor?: PlannedFor) => {
+        if (!selectedTask) return;
+
+        if (selectedTask.isRecurring) {
+            await createMutation.mutateAsync({
+                taskName: selectedTask.taskName,
+                status: TaskStatus.OPEN,
+                subType: selectedTask.subType,
+                taskOrEvent: TaskOrEvent.TASK,
+                plannedFor,
+                userNotes: selectedTask.userNotes,
+                isRecurring: false,
+                source: Source.USER,
+            });
+        } else {
+            await updateMutation.mutateAsync({
+                taskId: selectedTask.taskId,
+                taskOrEvent: selectedTask.taskOrEvent,
+                status: selectedTask.status,
+                subType: selectedTask.subType,
+                plannedFor,
+            });
+        }
+
+        setShowMoveModal(false);
+        setSelectedTask(null);
+    }, [selectedTask, updateMutation, createMutation]);
+
+    const renderTask = (task: Task, section: PlannerSection) => {
+        const isCompleted = task.status === TaskStatus.CLOSED;
+
+        return (
+            <View key={task.taskId} style={styles.taskRow}>
+                <Pressable
+                    style={styles.checkbox}
+                    onPress={() => handleToggleStatus(task)}
+                >
+                    <View style={[styles.checkboxInner, isCompleted && styles.checkboxChecked]}>
+                        {isCompleted && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                </Pressable>
+
+                <Pressable
+                    style={styles.taskContent}
+                    onPress={() => handleTaskPress(task)}
+                >
+                    <Text
+                        style={[styles.taskName, isCompleted && styles.taskNameCompleted]}
+                        numberOfLines={2}
+                    >
+                        {task.taskName || "Untitled"}
+                    </Text>
+                    {task.plannedFor && task.plannedFor.includes("Stretch") && (
+                        <Text style={styles.stretchLabel}>Stretch</Text>
+                    )}
+                </Pressable>
+
+                <Pressable
+                    style={styles.moveButton}
+                    onPress={() => handleMoveTask(task)}
+                    hitSlop={8}
+                >
+                    <Text style={styles.moveButtonText}>
+                        {section.isRecurring ? "+" : "→"}
+                    </Text>
+                </Pressable>
+            </View>
+        );
+    };
+
+    const renderSection = (section: PlannerSection) => {
+        const openTasks = section.tasks.filter((t) => t.status !== TaskStatus.CLOSED);
+        const closedTasks = section.tasks.filter((t) => t.status === TaskStatus.CLOSED);
+
+        return (
+            <View key={section.key} style={styles.section}>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    <View style={styles.sectionHeaderRight}>
+                        <Text style={styles.taskCount}>{openTasks.length}</Text>
+                        <Pressable
+                            style={styles.addButton}
+                            onPress={() => handleCreateTask(section.plannedFor, section.isRecurring)}
+                            hitSlop={8}
+                        >
+                            <Text style={styles.addButtonText}>+</Text>
+                        </Pressable>
+                    </View>
+                </View>
+
+                {section.tasks.length === 0 ? (
+                    <Text style={styles.emptyText}>No tasks</Text>
+                ) : (
+                    <>
+                        {openTasks.map((task) => renderTask(task, section))}
+                        {closedTasks.length > 0 && (
+                            <View style={styles.completedSection}>
+                                <Text style={styles.completedLabel}>
+                                    Completed ({closedTasks.length})
+                                </Text>
+                                {closedTasks.map((task) => renderTask(task, section))}
+                            </View>
+                        )}
+                    </>
+                )}
+            </View>
+        );
+    };
+
+    const renderMoveModal = () => (
+        <Modal
+            visible={showMoveModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowMoveModal(false)}
+        >
+            <Pressable
+                style={styles.modalOverlay}
+                onPress={() => setShowMoveModal(false)}
+            >
+                <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                    <Text style={styles.modalTitle}>
+                        {selectedTask?.isRecurring ? "Create Task For" : "Move To"}
+                    </Text>
+
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.TODAY)}
+                    >
+                        <Text style={styles.modalOptionText}>Today</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}
+                    >
+                        <Text style={styles.modalOptionText}>Today (Stretch)</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.TOMORROW)}
+                    >
+                        <Text style={styles.modalOptionText}>Tomorrow</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}
+                    >
+                        <Text style={styles.modalOptionText}>Tomorrow (Stretch)</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}
+                    >
+                        <Text style={styles.modalOptionText}>This Week</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.modalOption}
+                        onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}
+                    >
+                        <Text style={styles.modalOptionText}>This Week (Stretch)</Text>
+                    </Pressable>
+                    {!selectedTask?.isRecurring && (
+                        <Pressable
+                            style={styles.modalOption}
+                            onPress={() => handleMoveTo(undefined)}
+                        >
+                            <Text style={styles.modalOptionText}>Unplanned</Text>
+                        </Pressable>
+                    )}
+
+                    <Pressable
+                        style={styles.modalCancel}
+                        onPress={() => setShowMoveModal(false)}
+                    >
+                        <Text style={styles.modalCancelText}>Cancel</Text>
+                    </Pressable>
+                </Pressable>
+            </Pressable>
+        </Modal>
+    );
+
+    if (isLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Planner</Text>
+                </View>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (error) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Planner</Text>
+                </View>
+                <View style={styles.centered}>
+                    <Text style={styles.errorText}>Failed to load tasks</Text>
+                    <Pressable style={styles.retryButton} onPress={() => refetch()}>
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Work Planner</Text>
-                <Text style={styles.subtitle}>Plan your work day</Text>
+                <Text style={styles.headerTitle}>Planner</Text>
             </View>
-            <View style={styles.content}>
-                <Text style={styles.placeholder}>Coming soon...</Text>
-            </View>
+
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefetching}
+                        onRefresh={refetch}
+                        tintColor={colors.primary}
+                    />
+                }
+            >
+                {sections.map(renderSection)}
+                <View style={styles.bottomPadding} />
+            </ScrollView>
+
+            {renderMoveModal()}
         </SafeAreaView>
     );
 }
@@ -23,28 +335,186 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: spacing.lg,
-        paddingTop: spacing.md,
-        paddingBottom: spacing.lg,
+        paddingVertical: spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
-    title: {
-        fontSize: fontSize.xxl,
-        fontWeight: "700" as const,
+    headerTitle: {
+        fontSize: fontSize.lg,
+        fontWeight: "600" as const,
         color: colors.text,
     },
-    subtitle: {
-        fontSize: fontSize.sm,
-        color: colors.textSecondary,
-        marginTop: spacing.xs,
-    },
     content: {
+        flex: 1,
+    },
+    centered: {
         flex: 1,
         justifyContent: "center" as const,
         alignItems: "center" as const,
     },
-    placeholder: {
-        fontSize: fontSize.lg,
+    errorText: {
+        color: colors.error,
+        marginBottom: spacing.md,
+    },
+    retryButton: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    retryButtonText: {
+        color: colors.text,
+        fontWeight: "500" as const,
+    },
+    section: {
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    sectionHeader: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+        marginBottom: spacing.sm,
+    },
+    sectionTitle: {
+        fontSize: fontSize.md,
+        fontWeight: "600" as const,
+        color: colors.text,
+    },
+    sectionHeaderRight: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+    },
+    taskCount: {
+        fontSize: fontSize.sm,
         color: colors.textMuted,
+        marginRight: spacing.sm,
+    },
+    addButton: {
+        width: 28,
+        height: 28,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.surface,
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
+    },
+    addButtonText: {
+        fontSize: fontSize.lg,
+        color: colors.textSecondary,
+        marginTop: -2,
+    },
+    emptyText: {
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
+        fontStyle: "italic" as const,
+    },
+    taskRow: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        paddingVertical: spacing.sm,
+    },
+    checkbox: {
+        marginRight: spacing.sm,
+    },
+    checkboxInner: {
+        width: 22,
+        height: 22,
+        borderRadius: borderRadius.sm,
+        borderWidth: 2,
+        borderColor: colors.border,
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
+    },
+    checkboxChecked: {
+        backgroundColor: colors.statusClosed,
+        borderColor: colors.statusClosed,
+    },
+    checkmark: {
+        color: colors.text,
+        fontSize: 14,
+        fontWeight: "600" as const,
+    },
+    taskContent: {
+        flex: 1,
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+    },
+    taskName: {
+        fontSize: fontSize.md,
+        color: colors.text,
+        flex: 1,
+    },
+    taskNameCompleted: {
+        textDecorationLine: "line-through" as const,
+        color: colors.textMuted,
+    },
+    stretchLabel: {
+        fontSize: fontSize.xs,
+        color: colors.primary,
+        marginLeft: spacing.sm,
+    },
+    moveButton: {
+        width: 32,
+        height: 32,
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
+    },
+    moveButtonText: {
+        fontSize: fontSize.lg,
+        color: colors.textSecondary,
+    },
+    completedSection: {
+        marginTop: spacing.sm,
+        opacity: 0.6,
+    },
+    completedLabel: {
+        fontSize: fontSize.xs,
+        color: colors.textMuted,
+        marginBottom: spacing.xs,
+    },
+    bottomPadding: {
+        height: spacing.xxl,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
+    },
+    modalContent: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        width: "80%",
+        maxWidth: 300,
+    },
+    modalTitle: {
+        fontSize: fontSize.lg,
+        fontWeight: "600" as const,
+        color: colors.text,
+        marginBottom: spacing.md,
+        textAlign: "center" as const,
+    },
+    modalOption: {
+        paddingVertical: spacing.md,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+    },
+    modalOptionText: {
+        fontSize: fontSize.md,
+        color: colors.text,
+        textAlign: "center" as const,
+    },
+    modalCancel: {
+        paddingVertical: spacing.md,
+        marginTop: spacing.sm,
+    },
+    modalCancelText: {
+        fontSize: fontSize.md,
+        color: colors.error,
+        textAlign: "center" as const,
+        fontWeight: "500" as const,
     },
 });

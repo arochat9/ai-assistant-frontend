@@ -90,14 +90,44 @@ export interface ChatMessage {
     content: string;
 }
 
-export interface ChatResponse {
-    message: string;
-    role: string;
-}
-
 export const agentApi = {
-    chat: async (messages: ChatMessage[]): Promise<ChatResponse> => {
-        const response = await api.post<ChatResponse>("/api/agent/chat", { messages });
-        return response.data;
+    // Chat - parses Vercel AI SDK stream format and returns full response
+    chat: async (messages: ChatMessage[]): Promise<string> => {
+        const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ messages }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Chat failed: ${response.status} - ${errorText}`);
+        }
+
+        // Get full response text
+        const text = await response.text();
+
+        // Parse Vercel AI SDK data stream format
+        // Format: "0:\"text chunk\"\n" for text deltas
+        let fullMessage = "";
+        const lines = text.split("\n");
+
+        for (const line of lines) {
+            if (line.startsWith("0:")) {
+                try {
+                    const jsonStr = line.slice(2);
+                    const chunk = JSON.parse(jsonStr);
+                    if (typeof chunk === "string") {
+                        fullMessage += chunk;
+                    }
+                } catch {
+                    // Skip malformed lines
+                }
+            }
+        }
+
+        return fullMessage;
     },
 };

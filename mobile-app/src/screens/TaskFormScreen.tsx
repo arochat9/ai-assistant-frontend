@@ -32,6 +32,8 @@ import {
 type TaskFormRouteParams = {
     TaskForm: {
         task?: Task;
+        defaultPlannedFor?: PlannedFor;
+        defaultIsRecurring?: boolean;
     };
 };
 
@@ -39,12 +41,15 @@ export function TaskFormScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
     const route = useRoute<RouteProp<TaskFormRouteParams, "TaskForm">>();
     const task = route.params?.task;
+    const defaultPlannedFor = route.params?.defaultPlannedFor;
+    const defaultIsRecurring = route.params?.defaultIsRecurring;
     const isEditing = !!task;
 
     const [taskName, setTaskName] = useState("");
     const [status, setStatus] = useState<TaskStatus>(TaskStatus.OPEN);
     const [subType, setSubType] = useState<SubType>(SubType.ERRAND);
-    const [plannedFor, setPlannedFor] = useState<PlannedFor | undefined>(undefined);
+    const [plannedFor, setPlannedFor] = useState<PlannedFor | undefined>(defaultPlannedFor);
+    const [isRecurring, setIsRecurring] = useState(defaultIsRecurring ?? false);
     const [userNotes, setUserNotes] = useState("");
 
     const { createMutation, updateMutation } = useTaskMutations({
@@ -58,6 +63,7 @@ export function TaskFormScreen() {
             setStatus(task.status);
             setSubType(task.subType);
             setPlannedFor(task.plannedFor);
+            setIsRecurring(task.isRecurring ?? false);
             setUserNotes(task.userNotes || "");
         }
     }, [task]);
@@ -82,12 +88,12 @@ export function TaskFormScreen() {
                 taskOrEvent: TaskOrEvent.TASK,
                 plannedFor,
                 userNotes: userNotes || undefined,
-                isRecurring: false,
+                isRecurring,
                 source: Source.USER,
             };
             createMutation.mutate(createData);
         }
-    }, [task, isEditing, taskName, status, subType, plannedFor, userNotes, createMutation, updateMutation]);
+    }, [task, isEditing, taskName, status, subType, plannedFor, isRecurring, userNotes, createMutation, updateMutation]);
 
     const renderOptionGroup = (
         label: string,
@@ -140,18 +146,32 @@ export function TaskFormScreen() {
                     <View style={styles.fieldGroup}>
                         <Text style={styles.fieldLabel}>Task Name</Text>
                         <TextInput
-                            style={styles.textInput}
+                            style={[styles.textInput, styles.textArea]}
                             value={taskName}
                             onChangeText={setTaskName}
                             placeholder="Enter task name..."
                             placeholderTextColor={colors.textMuted}
                             autoFocus={!isEditing}
+                            multiline
+                            textAlignVertical="top"
                         />
                     </View>
 
                     {renderOptionGroup("Status", getTaskStatusValues(), status, (v) => setStatus(v as TaskStatus))}
                     {renderOptionGroup("Type", getSubTypeValues(), subType, (v) => setSubType(v as SubType))}
                     {renderOptionGroup("Planned For", getPlannedForValues(), plannedFor, (v) => setPlannedFor(v as PlannedFor | undefined), true)}
+
+                    <View style={styles.fieldGroup}>
+                        <Pressable
+                            style={styles.toggleRow}
+                            onPress={() => setIsRecurring(!isRecurring)}
+                        >
+                            <Text style={styles.fieldLabel}>Recurring Task</Text>
+                            <View style={[styles.toggle, isRecurring && styles.toggleActive]}>
+                                <View style={[styles.toggleKnob, isRecurring && styles.toggleKnobActive]} />
+                            </View>
+                        </Pressable>
+                    </View>
 
                     <View style={styles.fieldGroup}>
                         <Text style={styles.fieldLabel}>Notes</Text>
@@ -255,5 +275,34 @@ const styles = StyleSheet.create({
     optionTextActive: {
         color: colors.text,
         fontWeight: "500" as const,
+    },
+    toggleRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+    },
+    toggle: {
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: 2,
+        justifyContent: "center" as const,
+    },
+    toggleActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    toggleKnob: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: colors.textSecondary,
+    },
+    toggleKnobActive: {
+        backgroundColor: colors.text,
+        alignSelf: "flex-end" as const,
     },
 });
