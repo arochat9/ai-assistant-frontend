@@ -72,9 +72,9 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
         }
     };
 
-    const handleChange = (field: string, value: string) => {
+    const handleChange = (field: string, value: string | boolean) => {
         if (field === "taskDueTime" || field === "eventStartTime" || field === "eventEndTime") {
-            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value) : undefined }));
+            setFormData((prev) => ({ ...prev, [field]: value ? new Date(value as string) : undefined }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
         }
@@ -91,6 +91,7 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
                     <TaskFormFields
                         values={{
                             ...formData,
+                            isRecurring: task.isRecurring,
                             taskDueTime: formData.taskDueTime ? format(formData.taskDueTime, "yyyy-MM-dd'T'HH:mm") : "",
                             eventStartTime: formData.eventStartTime
                                 ? format(formData.eventStartTime, "yyyy-MM-dd'T'HH:mm")
@@ -102,6 +103,7 @@ export function TaskEditDialog({ open, onOpenChange, onSubmit, isLoading, task }
                         }}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
+                        recurringEditable={false}
                     />
 
                     <div className="flex justify-end gap-2 pt-4">
