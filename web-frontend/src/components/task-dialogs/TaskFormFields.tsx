@@ -26,7 +26,13 @@ interface TaskFormFieldsProps {
     onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
-export function TaskFormFields({ values, onChange, showRequired = false, recurringEditable = true, onKeyDown }: TaskFormFieldsProps) {
+export function TaskFormFields({
+    values,
+    onChange,
+    showRequired = false,
+    recurringEditable = true,
+    onKeyDown,
+}: TaskFormFieldsProps) {
     const isEvent = values.taskOrEvent === TaskOrEvent.EVENT;
     const isRecurring = values.isRecurring ?? false;
 
@@ -39,7 +45,11 @@ export function TaskFormFields({ values, onChange, showRequired = false, recurri
     return (
         <>
             <div className="flex items-center gap-3">
-                <label className={`relative inline-flex items-center ${recurringEditable ? 'cursor-pointer' : 'cursor-default opacity-60'}`}>
+                <label
+                    className={`relative inline-flex items-center ${
+                        recurringEditable ? "cursor-pointer" : "cursor-default opacity-60"
+                    }`}
+                >
                     <input
                         id="isRecurring"
                         type="checkbox"
@@ -50,7 +60,10 @@ export function TaskFormFields({ values, onChange, showRequired = false, recurri
                     />
                     <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 peer-disabled:opacity-60 peer-disabled:cursor-not-allowed"></div>
                 </label>
-                <Label htmlFor="isRecurring" className={`text-sm ${recurringEditable ? 'cursor-pointer' : 'cursor-default opacity-60'}`}>
+                <Label
+                    htmlFor="isRecurring"
+                    className={`text-sm ${recurringEditable ? "cursor-pointer" : "cursor-default opacity-60"}`}
+                >
                     Recurring Task
                 </Label>
             </div>
