@@ -1,10 +1,5 @@
 import { useRef, useCallback, useMemo } from "react";
-import {
-    AudioContext,
-    AudioBufferQueueSourceNode,
-    AudioRecorder,
-    AudioManager,
-} from "react-native-audio-api";
+import { AudioContext, AudioBufferQueueSourceNode, AudioRecorder, AudioManager } from "react-native-audio-api";
 
 const SAMPLE_RATE = 24000;
 
@@ -28,7 +23,7 @@ function encodePcm16(float32Data: Float32Array): string {
     const pcm16 = new Int16Array(float32Data.length);
     for (let i = 0; i < float32Data.length; i++) {
         const s = Math.max(-1, Math.min(1, float32Data[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
     }
     const bytes = new Uint8Array(pcm16.buffer);
     let binary = "";
@@ -45,7 +40,7 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
     const queueSourceRef = useRef<AudioBufferQueueSourceNode | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const chunksRef = useRef<number[][]>([]);
-    
+
     const isPlayingRef = useRef(false);
     const streamDoneRef = useRef(false);
     const buffersEnqueued = useRef(0);
@@ -74,29 +69,32 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
         if (isPlayingRef.current) return;
         buffersEnqueued.current = 0;
         buffersPlayed.current = 0;
-        
+
         const ctx = getContext();
         const source = ctx.createBufferQueueSource();
         source.connect(ctx.destination);
         source.onEnded = onEnded;
         source.start(ctx.currentTime);
-        
+
         queueSourceRef.current = source;
         isPlayingRef.current = true;
     }, [getContext, onEnded]);
 
-    const enqueueAudio = useCallback((pcm16Base64: string) => {
-        if (!queueSourceRef.current) startPlayback();
-        const ctx = audioContextRef.current;
-        const source = queueSourceRef.current;
-        if (!ctx || !source) return;
+    const enqueueAudio = useCallback(
+        (pcm16Base64: string) => {
+            if (!queueSourceRef.current) startPlayback();
+            const ctx = audioContextRef.current;
+            const source = queueSourceRef.current;
+            if (!ctx || !source) return;
 
-        const float32Data = decodePcm16(pcm16Base64);
-        const buffer = ctx.createBuffer(1, float32Data.length, SAMPLE_RATE);
-        buffer.copyToChannel(float32Data, 0, 0);
-        source.enqueueBuffer(buffer);
-        buffersEnqueued.current++;
-    }, [startPlayback]);
+            const float32Data = decodePcm16(pcm16Base64);
+            const buffer = ctx.createBuffer(1, float32Data.length, SAMPLE_RATE);
+            buffer.copyToChannel(float32Data, 0, 0);
+            source.enqueueBuffer(buffer);
+            buffersEnqueued.current++;
+        },
+        [startPlayback],
+    );
 
     const markStreamDone = useCallback(() => {
         streamDoneRef.current = true;
@@ -123,10 +121,10 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
         chunksRef.current = [];
 
         if (!recorderRef.current) recorderRef.current = new AudioRecorder();
-        
+
         recorderRef.current.onAudioReady(
             { sampleRate: SAMPLE_RATE, bufferLength: 2400, channelCount: 1 },
-            ({ buffer }) => chunksRef.current.push(Array.from(buffer.getChannelData(0)))
+            ({ buffer }) => chunksRef.current.push(Array.from(buffer.getChannelData(0))),
         );
 
         const result = recorderRef.current.start();
@@ -135,7 +133,7 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
 
     const stopRecording = useCallback((): string | null => {
         if (!recorderRef.current?.isRecording()) return null;
-        
+
         recorderRef.current.clearOnAudioReady();
         recorderRef.current.stop();
 
@@ -157,7 +155,9 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
         recorderRef.current = null;
         stopPlayback();
         if (audioContextRef.current) {
-            try { audioContextRef.current.close(); } catch {}
+            try {
+                audioContextRef.current.close();
+            } catch {}
             audioContextRef.current = null;
         }
         AudioManager.setAudioSessionActivity(false);
@@ -173,13 +173,16 @@ export function useRealtimeAudio({ onPlaybackComplete }: UseRealtimeAudioOptions
     }, []);
 
     // Return stable object reference
-    return useMemo(() => ({
-        enqueueAudio,
-        markStreamDone,
-        stopPlayback,
-        startRecording,
-        stopRecording,
-        cleanup,
-        initAudioSession,
-    }), [enqueueAudio, markStreamDone, stopPlayback, startRecording, stopRecording, cleanup, initAudioSession]);
+    return useMemo(
+        () => ({
+            enqueueAudio,
+            markStreamDone,
+            stopPlayback,
+            startRecording,
+            stopRecording,
+            cleanup,
+            initAudioSession,
+        }),
+        [enqueueAudio, markStreamDone, stopPlayback, startRecording, stopRecording, cleanup, initAudioSession],
+    );
 }

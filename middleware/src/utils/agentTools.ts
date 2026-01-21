@@ -44,7 +44,10 @@ Rules:
             eventStartTime: z.string().optional().describe("Event start time in ISO. Required if Event."),
             eventEndTime: z.string().optional().describe("Event end time in ISO. Required if Event."),
             eventApprovalStatus: z.nativeEnum(EventApprovalStatus).optional().describe("Required if Event."),
-            plannedFor: z.nativeEnum(PlannedFor).optional().describe("Today, Tomorrow, This Week. Cannot set if isRecurring."),
+            plannedFor: z
+                .nativeEnum(PlannedFor)
+                .optional()
+                .describe("Today, Tomorrow, This Week. Cannot set if isRecurring."),
             tags: z.array(z.string()).optional().describe("Tags for the task"),
         }),
         execute: async (params) => {
@@ -82,7 +85,10 @@ Rules:
             eventStartTime: z.string().optional().describe("Event start time in ISO. Required if Event."),
             eventEndTime: z.string().optional().describe("Event end time in ISO. Required if Event."),
             eventApprovalStatus: z.nativeEnum(EventApprovalStatus).optional().describe("Required if Event."),
-            plannedFor: z.nativeEnum(PlannedFor).optional().describe("Today, Tomorrow, This Week. Cannot set if recurring."),
+            plannedFor: z
+                .nativeEnum(PlannedFor)
+                .optional()
+                .describe("Today, Tomorrow, This Week. Cannot set if recurring."),
             tags: z.array(z.string()).optional().describe("Tags for the task"),
         }),
         execute: async (params) => {

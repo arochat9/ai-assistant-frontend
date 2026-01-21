@@ -12,10 +12,7 @@ import {
     ActivityIndicator,
     NativeScrollEvent,
 } from "react-native";
-import {
-    ExpoSpeechRecognitionModule,
-    useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import Markdown from "react-native-markdown-display";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import { agentApi, ChatMessage, ToolCall } from "../services/api";
@@ -153,9 +150,7 @@ export function AgentScreen() {
         await agentApi.chatStream(chatHistory, {
             onText: (chunk) => {
                 setMessages((prev) =>
-                    prev.map((m) =>
-                        m.id === assistantId ? { ...m, content: m.content + chunk } : m
-                    )
+                    prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)),
                 );
             },
             onToolCall: (toolCall) => {
@@ -165,7 +160,7 @@ export function AgentScreen() {
                         const newToolCalls = new Map(m.toolCalls);
                         newToolCalls.set(toolCall.toolCallId, toolCall);
                         return { ...m, toolCalls: newToolCalls };
-                    })
+                    }),
                 );
             },
             onToolResult: (toolCallId, result) => {
@@ -178,23 +173,19 @@ export function AgentScreen() {
                             newToolCalls.set(toolCallId, { ...existing, state: "result", result });
                         }
                         return { ...m, toolCalls: newToolCalls };
-                    })
+                    }),
                 );
             },
             onError: (error) => {
                 setMessages((prev) =>
                     prev.map((m) =>
-                        m.id === assistantId
-                            ? { ...m, content: `Error: ${error.message}`, isStreaming: false }
-                            : m
-                    )
+                        m.id === assistantId ? { ...m, content: `Error: ${error.message}`, isStreaming: false } : m,
+                    ),
                 );
                 setIsLoading(false);
             },
             onDone: () => {
-                setMessages((prev) =>
-                    prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m))
-                );
+                setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)));
                 setIsLoading(false);
             },
         });
@@ -229,10 +220,7 @@ export function AgentScreen() {
                 </View>
             </View>
 
-            <VoiceMode
-                visible={voiceModeVisible}
-                onClose={() => setVoiceModeVisible(false)}
-            />
+            <VoiceMode visible={voiceModeVisible} onClose={() => setVoiceModeVisible(false)} />
 
             <KeyboardAvoidingView
                 style={styles.chatContainer}

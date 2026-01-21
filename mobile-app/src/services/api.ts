@@ -14,7 +14,7 @@ import type {
 // For development, use your local machine's IP address (not localhost)
 // e.g., "http://192.168.1.100:3000" or your deployed URL
 const API_BASE_URL = __DEV__
-    ? "http://localhost:3000"  // Update with your machine's IP for physical device testing
+    ? "http://localhost:3000" // Update with your machine's IP for physical device testing
     : "https://your-production-url.fly.dev";
 
 const api = axios.create({
@@ -36,7 +36,7 @@ api.interceptors.response.use(
                 Object.entries(obj).map(([k, v]) => [
                     k,
                     typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v) ? new Date(v) : convertDates(v),
-                ])
+                ]),
             );
         };
 
@@ -49,7 +49,7 @@ api.interceptors.response.use(
             error.message = error.response.data.details;
         }
         return Promise.reject(error);
-    }
+    },
 );
 
 export const tasksApi = {
@@ -171,4 +171,3 @@ export const agentApi = {
         }
     },
 };
-

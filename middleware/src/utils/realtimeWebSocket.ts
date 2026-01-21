@@ -64,15 +64,27 @@ Rules:
             properties: {
                 taskName: { type: "string", description: "Name/title of the task" },
                 taskOrEvent: { type: "string", enum: Object.values(TaskOrEvent), description: "Task or Event" },
-                subType: { type: "string", enum: Object.values(SubType), description: "Fun, Text response, Chore, or Errand" },
+                subType: {
+                    type: "string",
+                    enum: Object.values(SubType),
+                    description: "Fun, Text response, Chore, or Errand",
+                },
                 status: { type: "string", enum: Object.values(TaskStatus), description: "Task status" },
                 isRecurring: { type: "boolean", description: "True if task repeats" },
                 userNotes: { type: "string", description: "Additional notes" },
                 taskDueTime: { type: "string", description: "Due date/time in ISO format" },
                 eventStartTime: { type: "string", description: "Event start time in ISO" },
                 eventEndTime: { type: "string", description: "Event end time in ISO" },
-                eventApprovalStatus: { type: "string", enum: Object.values(EventApprovalStatus), description: "Event approval status" },
-                plannedFor: { type: "string", enum: Object.values(PlannedFor), description: "Today, Tomorrow, This Week" },
+                eventApprovalStatus: {
+                    type: "string",
+                    enum: Object.values(EventApprovalStatus),
+                    description: "Event approval status",
+                },
+                plannedFor: {
+                    type: "string",
+                    enum: Object.values(PlannedFor),
+                    description: "Today, Tomorrow, This Week",
+                },
                 tags: { type: "array", items: { type: "string" }, description: "Tags for the task" },
             },
             required: ["taskName", "taskOrEvent", "subType"],
@@ -91,14 +103,26 @@ Rules:
                 taskId: { type: "string", description: "The ID of the task to update" },
                 taskName: { type: "string", description: "Updated name/title" },
                 taskOrEvent: { type: "string", enum: Object.values(TaskOrEvent), description: "Task or Event" },
-                subType: { type: "string", enum: Object.values(SubType), description: "Fun, Text response, Chore, or Errand" },
+                subType: {
+                    type: "string",
+                    enum: Object.values(SubType),
+                    description: "Fun, Text response, Chore, or Errand",
+                },
                 status: { type: "string", enum: Object.values(TaskStatus), description: "Task status" },
                 userNotes: { type: "string", description: "Updated notes" },
                 taskDueTime: { type: "string", description: "Due date/time in ISO" },
                 eventStartTime: { type: "string", description: "Event start time in ISO" },
                 eventEndTime: { type: "string", description: "Event end time in ISO" },
-                eventApprovalStatus: { type: "string", enum: Object.values(EventApprovalStatus), description: "Event approval status" },
-                plannedFor: { type: "string", enum: Object.values(PlannedFor), description: "Today, Tomorrow, This Week" },
+                eventApprovalStatus: {
+                    type: "string",
+                    enum: Object.values(EventApprovalStatus),
+                    description: "Event approval status",
+                },
+                plannedFor: {
+                    type: "string",
+                    enum: Object.values(PlannedFor),
+                    description: "Today, Tomorrow, This Week",
+                },
                 tags: { type: "array", items: { type: "string" }, description: "Tags for the task" },
             },
             required: ["taskId", "taskOrEvent", "subType", "status"],
@@ -109,11 +133,11 @@ Rules:
 // Strip WAV header from base64 WAV data to get raw PCM
 function stripWavHeader(wavBase64: string): string {
     const wavBuffer = Buffer.from(wavBase64, "base64");
-    
+
     // Find "data" chunk - WAV header ends there
     // Standard WAV header is 44 bytes but can vary
     let dataOffset = 44;
-    
+
     // Search for "data" marker
     for (let i = 0; i < Math.min(wavBuffer.length - 4, 100); i++) {
         if (
@@ -127,7 +151,7 @@ function stripWavHeader(wavBase64: string): string {
             break;
         }
     }
-    
+
     // Extract PCM data after header
     const pcmData = wavBuffer.subarray(dataOffset);
     return pcmData.toString("base64");
@@ -136,17 +160,17 @@ function stripWavHeader(wavBase64: string): string {
 // Execute tool calls
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
     console.log(`[Realtime] Executing tool: ${name}`, args);
-    
+
     try {
         switch (name) {
             case "getTasks":
                 const tasks = await fetchTasks(args);
                 return JSON.stringify(tasks);
-                
+
             case "getTaskDetails":
                 const task = await fetchTaskById(args.taskId as string);
                 return JSON.stringify(task);
-                
+
             case "createTask": {
                 const source = args.isRecurring ? Source.USER : Source.AGENT;
                 const taskData = {
@@ -167,7 +191,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
                 const created = await createTask(taskData);
                 return JSON.stringify(created);
             }
-                
+
             case "updateTask": {
                 const updateData = {
                     taskId: args.taskId as string,
@@ -186,7 +210,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
                 const updated = await updateTask(updateData);
                 return JSON.stringify(updated);
             }
-                
+
             default:
                 return JSON.stringify({ error: `Unknown tool: ${name}` });
         }
@@ -209,7 +233,7 @@ export function setupRealtimeWebSocket(wss: WebSocketServer) {
         // Connect to OpenAI Realtime API
         const openaiWs = new WebSocket(OPENAI_REALTIME_URL, {
             headers: {
-                "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
                 "OpenAI-Beta": "realtime=v1",
             },
         });
@@ -218,7 +242,7 @@ export function setupRealtimeWebSocket(wss: WebSocketServer) {
 
         openaiWs.on("open", () => {
             console.log("[Realtime] Connected to OpenAI");
-            
+
             // Configure session with tools
             const sessionConfig = {
                 type: "session.update",
@@ -243,36 +267,42 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
         openaiWs.on("message", async (data: Buffer) => {
             try {
                 const event = JSON.parse(data.toString());
-                
+
                 // Handle function calls
                 if (event.type === "response.function_call_arguments.done") {
                     const { call_id, name, arguments: argsStr } = event;
                     const args = JSON.parse(argsStr);
-                    
+
                     const result = await executeTool(name, args);
-                    
+
                     // Send function result back to OpenAI
-                    openaiWs.send(JSON.stringify({
-                        type: "conversation.item.create",
-                        item: {
-                            type: "function_call_output",
-                            call_id,
-                            output: result,
-                        },
-                    }));
-                    
+                    openaiWs.send(
+                        JSON.stringify({
+                            type: "conversation.item.create",
+                            item: {
+                                type: "function_call_output",
+                                call_id,
+                                output: result,
+                            },
+                        }),
+                    );
+
                     // Trigger response generation with audio
-                    openaiWs.send(JSON.stringify({ 
-                        type: "response.create",
-                        response: { modalities: ["text", "audio"] }
-                    }));
-                    
+                    openaiWs.send(
+                        JSON.stringify({
+                            type: "response.create",
+                            response: { modalities: ["text", "audio"] },
+                        }),
+                    );
+
                     // Notify client about tool execution
-                    clientWs.send(JSON.stringify({
-                        type: "tool_executed",
-                        name,
-                        args,
-                    }));
+                    clientWs.send(
+                        JSON.stringify({
+                            type: "tool_executed",
+                            name,
+                            args,
+                        }),
+                    );
                 }
                 // Forward audio and relevant events to client
                 else if (
@@ -292,24 +322,35 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                 // Handle errors with full details
                 else if (event.type === "error") {
                     console.error("[Realtime] OpenAI error:", JSON.stringify(event, null, 2));
-                    clientWs.send(JSON.stringify({
-                        type: "error",
-                        message: event.error?.message || event.message || "Unknown error",
-                        code: event.error?.code,
-                    }));
+                    clientWs.send(
+                        JSON.stringify({
+                            type: "error",
+                            message: event.error?.message || event.message || "Unknown error",
+                            code: event.error?.code,
+                        }),
+                    );
                 }
                 // Log session events with details
                 else if (event.type === "session.created") {
-                    console.log(`[Realtime] ${event.type}:`, JSON.stringify(event.session?.modalities || event.session, null, 2));
+                    console.log(
+                        `[Realtime] ${event.type}:`,
+                        JSON.stringify(event.session?.modalities || event.session, null, 2),
+                    );
                     clientWs.send(JSON.stringify({ type: "session_ready" }));
                 } else if (event.type === "session.updated") {
-                    console.log(`[Realtime] ${event.type}:`, JSON.stringify(event.session?.modalities || event.session, null, 2));
+                    console.log(
+                        `[Realtime] ${event.type}:`,
+                        JSON.stringify(event.session?.modalities || event.session, null, 2),
+                    );
                     // Don't send session_ready again - already sent on session.created
                 }
                 // Log response events with details for debugging
                 else if (event.type.startsWith("response.")) {
                     if (event.type === "response.created") {
-                        console.log(`[Realtime] Event: ${event.type}`, JSON.stringify(event.response?.modalities, null, 2));
+                        console.log(
+                            `[Realtime] Event: ${event.type}`,
+                            JSON.stringify(event.response?.modalities, null, 2),
+                        );
                     } else if (event.type === "response.output_item.added") {
                         console.log(`[Realtime] Event: ${event.type}`, JSON.stringify(event.item, null, 2));
                     } else if (event.type === "response.content_part.added") {
@@ -346,21 +387,23 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
         // Forward client audio to OpenAI
         clientWs.on("message", (data: Buffer) => {
             if (!sessionConfigured) return;
-            
+
             try {
                 const message = JSON.parse(data.toString());
-                
+
                 if (message.type === "audio") {
                     // Client sends base64 WAV - need to strip header and send raw PCM
                     const wavBase64 = message.audio;
                     const pcmBase64 = stripWavHeader(wavBase64);
-                    
+
                     console.log(`[Realtime] Received audio: ${wavBase64.length} chars, PCM: ${pcmBase64.length} chars`);
-                    
-                    openaiWs.send(JSON.stringify({
-                        type: "input_audio_buffer.append",
-                        audio: pcmBase64,
-                    }));
+
+                    openaiWs.send(
+                        JSON.stringify({
+                            type: "input_audio_buffer.append",
+                            audio: pcmBase64,
+                        }),
+                    );
                 } else if (message.type === "commit_audio") {
                     console.log("[Realtime] Committing audio buffer");
                     openaiWs.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
@@ -372,10 +415,12 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                 // Binary audio data - forward directly
                 if (Buffer.isBuffer(data)) {
                     const base64Audio = data.toString("base64");
-                    openaiWs.send(JSON.stringify({
-                        type: "input_audio_buffer.append",
-                        audio: base64Audio,
-                    }));
+                    openaiWs.send(
+                        JSON.stringify({
+                            type: "input_audio_buffer.append",
+                            audio: base64Audio,
+                        }),
+                    );
                 }
             }
         });

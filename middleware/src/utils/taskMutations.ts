@@ -6,7 +6,7 @@ import type { Task } from "shared";
 
 /** Convert Date objects to ISO strings for Foundry API */
 function toFoundryDates<T extends { eventEndTime?: Date; eventStartTime?: Date; taskDueTime?: Date }>(
-    data: T
+    data: T,
 ): Omit<T, "eventEndTime" | "eventStartTime" | "taskDueTime"> & {
     eventEndTime?: string;
     eventStartTime?: string;

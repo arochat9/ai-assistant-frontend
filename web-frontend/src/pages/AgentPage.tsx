@@ -27,7 +27,13 @@ export function AgentPage() {
             <AgentMessages messages={messages} />
             <div className="sticky bottom-0 mx-auto w-full max-w-3xl border-t-0 bg-background px-4 pb-4">
                 {mode === "text" ? (
-                    <TextInput input={input} setInput={setInput} isLoading={isLoading} onSubmit={handleSubmit} onNewChat={() => setMessages([])} />
+                    <TextInput
+                        input={input}
+                        setInput={setInput}
+                        isLoading={isLoading}
+                        onSubmit={handleSubmit}
+                        onNewChat={() => setMessages([])}
+                    />
                 ) : (
                     <VoiceInput isListening={isListening} onToggle={toggleListening} />
                 )}

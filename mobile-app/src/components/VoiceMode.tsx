@@ -3,9 +3,7 @@ import { View, Text, StyleSheet, Pressable, Modal, Animated } from "react-native
 import { colors, spacing, fontSize } from "../theme";
 import { useRealtimeAudio } from "../hooks/useRealtimeAudio";
 
-const WS_URL = __DEV__
-    ? "ws://localhost:3000/api/realtime"
-    : "wss://your-production-url.fly.dev/api/realtime";
+const WS_URL = __DEV__ ? "ws://localhost:3000/api/realtime" : "wss://your-production-url.fly.dev/api/realtime";
 
 type VoiceState = "connecting" | "idle" | "listening" | "processing" | "speaking";
 
@@ -36,7 +34,7 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1.3, duration: 600, useNativeDriver: true }),
                     Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-                ])
+                ]),
             );
             pulse.start();
             return () => pulse.stop();
@@ -44,30 +42,33 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
         pulseAnim.setValue(1);
     }, [state, pulseAnim]);
 
-    const handleMessage = useCallback((data: { type: string; delta?: string; message?: string }) => {
-        switch (data.type) {
-            case "session_ready":
-                setState("idle");
-                break;
-            case "response.audio_transcript.delta":
-                if (data.delta) setTranscript(prev => prev + data.delta);
-                break;
-            case "response.audio.delta":
-                if (data.delta) {
-                    setState("speaking");
-                    audio.enqueueAudio(data.delta);
-                }
-                break;
-            case "response.audio.done":
-                audio.markStreamDone();
-                break;
-            case "error":
-                console.error("[VoiceMode] Error:", data.message);
-                busyRef.current = false;
-                setState("idle");
-                break;
-        }
-    }, [audio]);
+    const handleMessage = useCallback(
+        (data: { type: string; delta?: string; message?: string }) => {
+            switch (data.type) {
+                case "session_ready":
+                    setState("idle");
+                    break;
+                case "response.audio_transcript.delta":
+                    if (data.delta) setTranscript((prev) => prev + data.delta);
+                    break;
+                case "response.audio.delta":
+                    if (data.delta) {
+                        setState("speaking");
+                        audio.enqueueAudio(data.delta);
+                    }
+                    break;
+                case "response.audio.done":
+                    audio.markStreamDone();
+                    break;
+                case "error":
+                    console.error("[VoiceMode] Error:", data.message);
+                    busyRef.current = false;
+                    setState("idle");
+                    break;
+            }
+        },
+        [audio],
+    );
 
     // Setup WebSocket on mount
     useEffect(() => {
@@ -81,10 +82,14 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
             wsRef.current = ws;
             ws.onopen = () => console.log("[VoiceMode] Connected");
             ws.onmessage = (e) => {
-                try { handleMessage(JSON.parse(e.data)); } catch {}
+                try {
+                    handleMessage(JSON.parse(e.data));
+                } catch {}
             };
             ws.onerror = () => setState("idle");
-            ws.onclose = () => { wsRef.current = null; };
+            ws.onclose = () => {
+                wsRef.current = null;
+            };
         };
 
         setup();
@@ -93,7 +98,7 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
             wsRef.current?.close();
             wsRef.current = null;
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible]);
 
     const handleTap = useCallback(async () => {
@@ -150,11 +155,19 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
                 </Pressable>
 
                 <View style={styles.content}>
-                    <Pressable onPress={handleTap} style={styles.orbContainer} disabled={state === "connecting" || state === "processing"}>
-                        <Animated.View style={[styles.orb, { backgroundColor: stateColor, transform: [{ scale: pulseAnim }] }]} />
+                    <Pressable
+                        onPress={handleTap}
+                        style={styles.orbContainer}
+                        disabled={state === "connecting" || state === "processing"}
+                    >
+                        <Animated.View
+                            style={[styles.orb, { backgroundColor: stateColor, transform: [{ scale: pulseAnim }] }]}
+                        />
                         <View style={styles.orbInner} />
                     </Pressable>
-                    <Text style={styles.stateText} numberOfLines={3}>{stateText}</Text>
+                    <Text style={styles.stateText} numberOfLines={3}>
+                        {stateText}
+                    </Text>
                     {state === "idle" && <Text style={styles.hint}>Tap to start talking</Text>}
                 </View>
 
@@ -171,17 +184,45 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     closeButton: {
-        position: "absolute", top: 60, right: 20, width: 44, height: 44,
-        borderRadius: 22, backgroundColor: colors.surface,
-        justifyContent: "center", alignItems: "center", zIndex: 10,
+        position: "absolute",
+        top: 60,
+        right: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.surface,
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 10,
     },
     closeIcon: { fontSize: 20, color: colors.text },
     content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: spacing.xl },
     orbContainer: { width: 180, height: 180, justifyContent: "center", alignItems: "center", marginBottom: spacing.xl },
     orb: { position: "absolute", width: 180, height: 180, borderRadius: 90, opacity: 0.3 },
-    orbInner: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.surface, borderWidth: 3, borderColor: colors.border },
-    stateText: { fontSize: fontSize.lg, color: colors.text, textAlign: "center", marginBottom: spacing.sm, maxWidth: "80%" },
+    orbInner: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: colors.surface,
+        borderWidth: 3,
+        borderColor: colors.border,
+    },
+    stateText: {
+        fontSize: fontSize.lg,
+        color: colors.text,
+        textAlign: "center",
+        marginBottom: spacing.sm,
+        maxWidth: "80%",
+    },
     hint: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: "center" },
-    endButton: { position: "absolute", bottom: 60, alignSelf: "center", paddingHorizontal: spacing.xl, paddingVertical: spacing.md, backgroundColor: colors.surface, borderRadius: 24 },
+    endButton: {
+        position: "absolute",
+        bottom: 60,
+        alignSelf: "center",
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: 24,
+    },
     endText: { fontSize: fontSize.md, color: colors.text, fontWeight: "500" },
 });
