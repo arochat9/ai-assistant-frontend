@@ -2,8 +2,11 @@ import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 import tasksRoutes from "./routes/tasks.routes";
 import agentRoutes from "./routes/agent.routes";
+import { setupRealtimeWebSocket } from "./utils/realtimeWebSocket";
 
 dotenv.config();
 
@@ -32,7 +35,15 @@ app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../../web-frontend/dist/index.html"));
 });
 
+// Create HTTP server and WebSocket server
+const server = createServer(app);
+const wss = new WebSocketServer({ server, path: "/api/realtime" });
+
+// Setup realtime voice WebSocket
+setupRealtimeWebSocket(wss);
+
 // Start server
-app.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
     console.log(`Middleware server is running on port ${PORT}`);
+    console.log(`WebSocket available at ws://localhost:${PORT}/api/realtime`);
 });

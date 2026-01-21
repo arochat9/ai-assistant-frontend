@@ -154,3 +154,119 @@ export function formatEventTime(event: CalendarEvent): string {
 
     return start;
 }
+
+export function isMultiDayEvent(event: CalendarEvent): boolean {
+    // For all-day events, compare UTC dates to avoid timezone issues
+    if (event.isAllDay) {
+        const startUTC = Date.UTC(
+            event.startDate.getUTCFullYear(),
+            event.startDate.getUTCMonth(),
+            event.startDate.getUTCDate()
+        );
+        const endUTC = Date.UTC(
+            event.endDate.getUTCFullYear(),
+            event.endDate.getUTCMonth(),
+            event.endDate.getUTCDate()
+        );
+        return startUTC !== endUTC;
+    }
+
+    // For timed events, compare local dates
+    const startDay = new Date(event.startDate);
+    startDay.setHours(0, 0, 0, 0);
+    const endDay = new Date(event.endDate);
+    endDay.setHours(0, 0, 0, 0);
+    return startDay.getTime() !== endDay.getTime();
+}
+
+export interface SpanningEvent {
+    event: CalendarEvent;
+    startCol: number;
+    endCol: number;
+    isStartOfEvent: boolean;
+    isEndOfEvent: boolean;
+}
+
+function getEventDayTimestamp(event: CalendarEvent, date: Date, useStart: boolean): number {
+    if (event.isAllDay) {
+        const d = useStart ? event.startDate : event.endDate;
+        return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    }
+    const d = new Date(useStart ? event.startDate : event.endDate);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+}
+
+function getDayTimestamp(day: Date): number {
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+}
+
+export function getSpanningEventsForRow(events: CalendarEvent[], rowDays: Date[]): SpanningEvent[] {
+    if (rowDays.length === 0) return [];
+
+    const rowStartTs = getDayTimestamp(rowDays[0]);
+    const rowEndTs = getDayTimestamp(rowDays[rowDays.length - 1]);
+
+    const spanningEvents: SpanningEvent[] = [];
+
+    for (const event of events) {
+        if (!isMultiDayEvent(event)) continue;
+
+        const eventStartTs = getEventDayTimestamp(event, event.startDate, true);
+        const eventEndTs = getEventDayTimestamp(event, event.endDate, false);
+
+        // Check if event overlaps with this row
+        if (eventEndTs < rowStartTs || eventStartTs > rowEndTs) continue;
+
+        // Find start column (0-6)
+        let startCol = 0;
+        if (eventStartTs <= rowStartTs) {
+            startCol = 0;
+        } else {
+            for (let i = 0; i < rowDays.length; i++) {
+                const dayTs = getDayTimestamp(rowDays[i]);
+                if (dayTs >= eventStartTs) {
+                    startCol = i;
+                    break;
+                }
+            }
+        }
+
+        // Find end column (0-6)
+        let endCol = rowDays.length - 1;
+        if (eventEndTs >= rowEndTs) {
+            endCol = rowDays.length - 1;
+        } else {
+            for (let i = rowDays.length - 1; i >= 0; i--) {
+                const dayTs = getDayTimestamp(rowDays[i]);
+                if (dayTs <= eventEndTs) {
+                    endCol = i;
+                    break;
+                }
+            }
+        }
+
+        const isStartOfEvent = eventStartTs >= rowStartTs && eventStartTs <= rowEndTs;
+        const isEndOfEvent = eventEndTs >= rowStartTs && eventEndTs <= rowEndTs;
+
+        spanningEvents.push({
+            event,
+            startCol,
+            endCol,
+            isStartOfEvent,
+            isEndOfEvent,
+        });
+    }
+
+    // Sort by start column, then by event duration (longer events first)
+    return spanningEvents.sort((a, b) => {
+        if (a.startCol !== b.startCol) return a.startCol - b.startCol;
+        const aDuration = a.endCol - a.startCol;
+        const bDuration = b.endCol - b.startCol;
+        return bDuration - aDuration;
+    });
+}
+
+export function getSingleDayEventsForDay(events: CalendarEvent[], day: Date): CalendarEvent[] {
+    return getEventsForDay(events, day).filter(e => !isMultiDayEvent(e));
+}

@@ -1,15 +1,16 @@
 import { useRef } from "react";
 import { Button } from "../ui/button";
-import { Send } from "lucide-react";
+import { Send, Plus } from "lucide-react";
 
 interface TextInputProps {
     input: string;
     setInput: (value: string) => void;
     isLoading: boolean;
     onSubmit: (e: React.FormEvent) => void;
+    onNewChat: () => void;
 }
 
-export function TextInput({ input, setInput, isLoading, onSubmit }: TextInputProps) {
+export function TextInput({ input, setInput, isLoading, onSubmit, onNewChat }: TextInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -37,6 +38,9 @@ export function TextInput({ input, setInput, isLoading, onSubmit }: TextInputPro
                 }
             />
             <div className="absolute bottom-0 right-0 flex items-center gap-1 p-2">
+                <Button type="button" variant="ghost" size="icon" onClick={onNewChat} className="size-8" title="New chat">
+                    <Plus className="size-4" />
+                </Button>
                 <Button type="submit" size="icon" disabled={!input.trim() || isLoading} className="size-8">
                     <Send className="size-4" />
                 </Button>

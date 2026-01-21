@@ -90,44 +90,85 @@ export interface ChatMessage {
     content: string;
 }
 
+export interface ToolCall {
+    toolCallId: string;
+    toolName: string;
+    args: Record<string, unknown>;
+    state: "call" | "result";
+    result?: unknown;
+}
+
+export interface StreamCallbacks {
+    onText: (text: string) => void;
+    onToolCall: (toolCall: ToolCall) => void;
+    onToolResult: (toolCallId: string, result: unknown) => void;
+    onError: (error: Error) => void;
+    onDone: () => void;
+}
+
 export const agentApi = {
-    // Chat - parses Vercel AI SDK stream format and returns full response
-    chat: async (messages: ChatMessage[]): Promise<string> => {
-        const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ messages }),
-        });
+    // Streaming chat using expo/fetch
+    chatStream: async (messages: ChatMessage[], callbacks: StreamCallbacks): Promise<void> => {
+        // Use expo/fetch for streaming support in React Native
+        const { fetch: expoFetch } = await import("expo/fetch");
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Chat failed: ${response.status} - ${errorText}`);
-        }
+        try {
+            const response = await expoFetch(`${API_BASE_URL}/api/agent/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages }),
+            });
 
-        // Get full response text
-        const text = await response.text();
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Chat failed: ${response.status} - ${errorText}`);
+            }
 
-        // Parse Vercel AI SDK data stream format
-        // Format: "0:\"text chunk\"\n" for text deltas
-        let fullMessage = "";
-        const lines = text.split("\n");
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error("No response body");
 
-        for (const line of lines) {
-            if (line.startsWith("0:")) {
-                try {
-                    const jsonStr = line.slice(2);
-                    const chunk = JSON.parse(jsonStr);
-                    if (typeof chunk === "string") {
-                        fullMessage += chunk;
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+                for (const line of lines) {
+                    if (!line.includes(":")) continue;
+                    const colonIdx = line.indexOf(":");
+                    const prefix = line.slice(0, colonIdx);
+                    const jsonStr = line.slice(colonIdx + 1);
+
+                    try {
+                        const data = JSON.parse(jsonStr);
+
+                        if (prefix === "0" && typeof data === "string") {
+                            callbacks.onText(data);
+                        } else if (prefix === "9" && data.toolCallId) {
+                            callbacks.onToolCall({
+                                toolCallId: data.toolCallId,
+                                toolName: data.toolName,
+                                args: data.args,
+                                state: "call",
+                            });
+                        } else if (prefix === "a" && data.toolCallId) {
+                            callbacks.onToolResult(data.toolCallId, data.result);
+                        }
+                    } catch {
+                        // Skip malformed lines
                     }
-                } catch {
-                    // Skip malformed lines
                 }
             }
-        }
 
-        return fullMessage;
+            callbacks.onDone();
+        } catch (error) {
+            callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+        }
     },
 };
+

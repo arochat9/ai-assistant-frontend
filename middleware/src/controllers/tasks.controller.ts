@@ -1,8 +1,4 @@
 import { Request, Response } from "express";
-import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
-import * as Actions from "@ai-assistant-third-party-app/sdk";
-import { client } from "../config/foundry";
-import { Osdk } from "@osdk/client";
 import {
     TaskFilters,
     CreateTaskInput,
@@ -11,11 +7,10 @@ import {
     UpdateTaskSchema,
     TasksResponse,
     TaskResponse,
-    TaskActionResponse,
-    Environment,
 } from "shared";
 import { parseDateFields, normalizeOptionalFields } from "../utils/requestParser";
 import { fetchTasks, fetchTaskById } from "../utils/taskQueries";
+import { createTask, updateTask } from "../utils/taskMutations";
 
 /**
  * POST endpoint that fetches tasks with optional filtering
@@ -79,35 +74,13 @@ export async function createNewTask(req: Request, res: Response) {
 
         // Validate request body against schema
         const taskData: CreateTaskInput = CreateTaskSchema.parse(bodyWithDates);
-
-        // Convert Date objects to ISO strings for Foundry API
-        const foundryData = {
-            ...taskData,
-            eventEndTime: taskData.eventEndTime?.toISOString(),
-            eventStartTime: taskData.eventStartTime?.toISOString(),
-            taskDueTime: taskData.taskDueTime?.toISOString(),
-        };
-
-        const result = await client(Actions.createTaskFromUi).applyAction(foundryData, {
-            $returnEdits: true,
-        });
-
-        if (result.type !== "edits" || !result.addedObjects || result.addedObjects.length === 0) {
-            return res.status(500).json({
-                error: "Failed to create task",
-                details: "Action did not return created object",
-            });
-        }
-
-        // Fetch the created task using the primary key from the action response
-        const createdTaskRef = result.addedObjects[0];
-        const task = await fetchTaskById(createdTaskRef.primaryKey as string);
+        const task = await createTask(taskData);
 
         return res.status(201).json({ success: true, task });
     } catch (error) {
         console.error("Error creating task:", error);
-        const statusCode = (error as any)?.statusCode || 500;
-        const message = (error as any)?.parameters?.message;
+        const statusCode = (error as { statusCode?: number })?.statusCode || 500;
+        const message = (error as { parameters?: { message?: string } })?.parameters?.message;
         const errorMessage = message || (error instanceof Error ? error.message : "Failed to create task");
         return res.status(statusCode).json({
             error: "Failed to create task",
@@ -129,35 +102,13 @@ export async function updateExistingTask(req: Request, res: Response) {
 
         // Validate request body against schema
         const taskData: UpdateTaskInput = UpdateTaskSchema.parse(bodyWithDates);
-
-        // Convert Date objects to ISO strings for Foundry API
-        const foundryData = {
-            ...taskData,
-            eventEndTime: taskData.eventEndTime?.toISOString(),
-            eventStartTime: taskData.eventStartTime?.toISOString(),
-            taskDueTime: taskData.taskDueTime?.toISOString(),
-        };
-
-        const result = await client(Actions.updateTaskFromUi).applyAction(foundryData, {
-            $returnEdits: true,
-        });
-
-        if (result.type !== "edits" || !result.modifiedObjects || result.modifiedObjects.length === 0) {
-            return res.status(500).json({
-                error: "Failed to update task",
-                details: "Action did not return modified object",
-            });
-        }
-
-        // Fetch the updated task using the primary key from the action response
-        const updatedTaskRef = result.modifiedObjects[0];
-        const task = await fetchTaskById(updatedTaskRef.primaryKey as string);
+        const task = await updateTask(taskData);
 
         return res.json({ success: true, task });
     } catch (error) {
         console.error("Error updating task:", error);
-        const statusCode = (error as any)?.statusCode || 500;
-        const message = (error as any)?.parameters?.message;
+        const statusCode = (error as { statusCode?: number })?.statusCode || 500;
+        const message = (error as { parameters?: { message?: string } })?.parameters?.message;
         const errorMessage = message || (error instanceof Error ? error.message : "Failed to update task");
         return res.status(statusCode).json({
             error: "Failed to update task",

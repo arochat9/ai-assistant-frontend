@@ -8,13 +8,13 @@ import {
     Pressable,
     ActivityIndicator,
     SafeAreaView,
-    Modal,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
 import { tasksApi } from "../services/api";
 import { TaskItem } from "../components/tasks/TaskItem";
+import { BottomSheet } from "../components/BottomSheet";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import { Task, TaskStatus, TaskOrEvent, TaskFilters, getTaskStatusValues, getSubTypeValues } from "../types";
@@ -25,6 +25,7 @@ const DEFAULT_FILTERS: TaskFilters = { isRecurring: false };
 export function TasksScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<TasksStackParamList>>();
     const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
+    const [pendingFilters, setPendingFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
     const { data, isLoading, error, refetch, isRefetching } = useQuery({
@@ -49,6 +50,13 @@ export function TasksScreen() {
         return count;
     }, [filters]);
 
+    const pendingFilterCount = useMemo(() => {
+        let count = 0;
+        if (pendingFilters.status) count++;
+        if (pendingFilters.subType) count++;
+        return count;
+    }, [pendingFilters]);
+
     const handleTaskPress = useCallback((task: Task) => {
         navigation.navigate("TaskDetail", { task });
     }, [navigation]);
@@ -67,13 +75,23 @@ export function TasksScreen() {
         });
     }, [updateMutation]);
 
+    const handleOpenFilters = useCallback(() => {
+        setPendingFilters(filters);
+        setIsFilterModalVisible(true);
+    }, [filters]);
+
     const handleFilterChange = useCallback((key: keyof TaskFilters, value: string | undefined) => {
-        setFilters((prev) => ({ ...prev, [key]: value || undefined }));
+        setPendingFilters((prev) => ({ ...prev, [key]: value || undefined }));
     }, []);
 
     const handleClearFilters = useCallback(() => {
-        setFilters(DEFAULT_FILTERS);
+        setPendingFilters(DEFAULT_FILTERS);
     }, []);
+
+    const handleApplyFilters = useCallback(() => {
+        setFilters(pendingFilters);
+        setIsFilterModalVisible(false);
+    }, [pendingFilters]);
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
@@ -86,77 +104,66 @@ export function TasksScreen() {
     );
 
     const renderFilterModal = () => (
-        <Modal
+        <BottomSheet
             visible={isFilterModalVisible}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setIsFilterModalVisible(false)}
+            onClose={() => setIsFilterModalVisible(false)}
+            title="Filters"
         >
-            <Pressable
-                style={styles.filterModalOverlay}
-                onPress={() => setIsFilterModalVisible(false)}
-            >
-                <Pressable style={styles.filterModalContent} onPress={(e) => e.stopPropagation()}>
-                    <View style={styles.filterModalHeader}>
-                        <Text style={styles.filterModalTitle}>Filters</Text>
-                        {activeFilterCount > 0 && (
-                            <Pressable onPress={handleClearFilters}>
-                                <Text style={styles.clearAllText}>Clear all</Text>
-                            </Pressable>
-                        )}
-                    </View>
-
-                    <View style={styles.filterSection}>
-                        <Text style={styles.filterLabel}>Status</Text>
-                        <View style={styles.filterOptions}>
-                            <Pressable
-                                style={[styles.filterOption, !filters.status && styles.filterOptionActive]}
-                                onPress={() => handleFilterChange("status", undefined)}
-                            >
-                                <Text style={[styles.filterOptionText, !filters.status && styles.filterOptionTextActive]}>All</Text>
-                            </Pressable>
-                            {getTaskStatusValues().map((status) => (
-                                <Pressable
-                                    key={status}
-                                    style={[styles.filterOption, filters.status === status && styles.filterOptionActive]}
-                                    onPress={() => handleFilterChange("status", status)}
-                                >
-                                    <Text style={[styles.filterOptionText, filters.status === status && styles.filterOptionTextActive]}>{status}</Text>
-                                </Pressable>
-                            ))}
-                        </View>
-                    </View>
-
-                    <View style={styles.filterSection}>
-                        <Text style={styles.filterLabel}>Type</Text>
-                        <View style={styles.filterOptions}>
-                            <Pressable
-                                style={[styles.filterOption, !filters.subType && styles.filterOptionActive]}
-                                onPress={() => handleFilterChange("subType", undefined)}
-                            >
-                                <Text style={[styles.filterOptionText, !filters.subType && styles.filterOptionTextActive]}>All</Text>
-                            </Pressable>
-                            {getSubTypeValues().map((subType) => (
-                                <Pressable
-                                    key={subType}
-                                    style={[styles.filterOption, filters.subType === subType && styles.filterOptionActive]}
-                                    onPress={() => handleFilterChange("subType", subType)}
-                                >
-                                    <Text style={[styles.filterOptionText, filters.subType === subType && styles.filterOptionTextActive]}>{subType}</Text>
-                                </Pressable>
-                            ))}
-                        </View>
-                    </View>
-
-                    <Pressable
-                        style={styles.filterDoneButton}
-                        onPress={() => setIsFilterModalVisible(false)}
-                    >
-                        <Text style={styles.filterDoneButtonText}>Done</Text>
-                    </Pressable>
+            {pendingFilterCount > 0 && (
+                <Pressable onPress={handleClearFilters} style={styles.clearAllButton}>
+                    <Text style={styles.clearAllText}>Clear all</Text>
                 </Pressable>
+            )}
+
+            <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Status</Text>
+                <View style={styles.filterOptions}>
+                    <Pressable
+                        style={[styles.filterOption, !pendingFilters.status && styles.filterOptionActive]}
+                        onPress={() => handleFilterChange("status", undefined)}
+                    >
+                        <Text style={[styles.filterOptionText, !pendingFilters.status && styles.filterOptionTextActive]}>All</Text>
+                    </Pressable>
+                    {getTaskStatusValues().map((status) => (
+                        <Pressable
+                            key={status}
+                            style={[styles.filterOption, pendingFilters.status === status && styles.filterOptionActive]}
+                            onPress={() => handleFilterChange("status", status)}
+                        >
+                            <Text style={[styles.filterOptionText, pendingFilters.status === status && styles.filterOptionTextActive]}>{status}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
+            <View style={styles.filterSection}>
+                <Text style={styles.filterLabel}>Type</Text>
+                <View style={styles.filterOptions}>
+                    <Pressable
+                        style={[styles.filterOption, !pendingFilters.subType && styles.filterOptionActive]}
+                        onPress={() => handleFilterChange("subType", undefined)}
+                    >
+                        <Text style={[styles.filterOptionText, !pendingFilters.subType && styles.filterOptionTextActive]}>All</Text>
+                    </Pressable>
+                    {getSubTypeValues().map((subType) => (
+                        <Pressable
+                            key={subType}
+                            style={[styles.filterOption, pendingFilters.subType === subType && styles.filterOptionActive]}
+                            onPress={() => handleFilterChange("subType", subType)}
+                        >
+                            <Text style={[styles.filterOptionText, pendingFilters.subType === subType && styles.filterOptionTextActive]}>{subType}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
+            <Pressable
+                style={styles.filterDoneButton}
+                onPress={handleApplyFilters}
+            >
+                <Text style={styles.filterDoneButtonText}>Done</Text>
             </Pressable>
-        </Modal>
+        </BottomSheet>
     );
 
     const renderHeader = () => (
@@ -169,7 +176,7 @@ export function TasksScreen() {
                         pressed && styles.filterButtonPressed,
                         activeFilterCount > 0 && styles.filterButtonActive,
                     ]}
-                    onPress={() => setIsFilterModalVisible(true)}
+                    onPress={handleOpenFilters}
                 >
                     <Text style={[styles.filterButtonText, activeFilterCount > 0 && styles.filterButtonTextActive]}>
                         Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
@@ -376,29 +383,11 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         textAlign: "center" as const,
     },
-    // Filter Modal styles
-    filterModalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-        justifyContent: "flex-end" as const,
-    },
-    filterModalContent: {
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        padding: spacing.lg,
-        paddingBottom: spacing.xxl,
-    },
-    filterModalHeader: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        alignItems: "center" as const,
-        marginBottom: spacing.lg,
-    },
-    filterModalTitle: {
-        fontSize: fontSize.lg,
-        fontWeight: "600" as const,
-        color: colors.text,
+    // Filter styles
+    clearAllButton: {
+        alignSelf: "flex-end" as const,
+        marginBottom: spacing.md,
+        marginTop: -spacing.sm,
     },
     clearAllText: {
         fontSize: fontSize.sm,

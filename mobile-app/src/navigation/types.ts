@@ -24,6 +24,7 @@ export type TasksStackParamList = {
 export type CalendarStackParamList = {
     CalendarMain: undefined;
     CalendarDetail: { task: Task };
+    TaskForm: { task?: Task; defaultPlannedFor?: string; defaultIsRecurring?: boolean };
 };
 
 // Screen props

@@ -1,38 +1,21 @@
 import { Request, Response } from "express";
-import { streamText, tool } from "ai";
+import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { z } from "zod";
-import { TaskStatus, SubType, TaskOrEvent } from "shared";
-import { fetchTasks, fetchTaskById } from "../utils/taskQueries";
+import { agentTools } from "../utils/agentTools";
 
-const getSystemPrompt = () => `You are a helpful task management assistant. You help users view and understand their tasks.
-When users ask about their tasks, use the getTasks tool to retrieve them.
-When users ask about a specific task, use the getTaskDetails tool.
-Be conversational, friendly, and concise. Format task information clearly.
-Current date: ${new Date().toLocaleDateString()}`;
+const getSystemPrompt =
+    () => `You are a helpful task management assistant. You help users view, create, and manage their tasks.
 
-const tools = {
-    getTasks: tool({
-        description: "Get tasks with optional filters. Use when user asks about tasks, to-dos, or their schedule.",
-        parameters: z.object({
-            status: z
-                .nativeEnum(TaskStatus)
-                .optional()
-                .describe("Filter by status. Default to Open since there are many closed tasks."),
-            subType: z.nativeEnum(SubType).optional().describe("Filter by task subtype"),
-            taskOrEvent: z.nativeEnum(TaskOrEvent).optional().describe("Filter by task or event"),
-            keyword: z.string().optional().describe("Search keyword in task name or context"),
-        }),
-        execute: async (params) => fetchTasks(params),
-    }),
-    getTaskDetails: tool({
-        description: "Get detailed information about a specific task by its ID",
-        parameters: z.object({
-            taskId: z.string().describe("The ID of the task to retrieve"),
-        }),
-        execute: async ({ taskId }) => fetchTaskById(taskId),
-    }),
-};
+IMPORTANT: Do NOT ask unnecessary questions. Use sensible defaults and just create/update tasks.
+- isRecurring is just a boolean flag (true/false) - there is NO schedule configuration. Don't ask about frequency.
+- Default subType to "Chore" unless clearly something else
+- Default taskOrEvent to "Task" unless it's clearly an event with a specific time
+
+When users ask about their tasks, use the getTasks tool. Always filter to status "Open" by default.
+When users want to create a task, just create it with the info provided. Don't ask for more details unless absolutely necessary.
+When users want to update or complete a task, first fetch it with getTaskDetails, then use updateTask.
+
+Be concise. Current date: ${new Date().toLocaleDateString()}`;
 
 /**
  * POST /api/agent/chat
@@ -50,8 +33,20 @@ export async function chat(req: Request, res: Response) {
             model: openai("gpt-4-turbo"),
             system: getSystemPrompt(),
             messages,
-            tools,
+            tools: agentTools,
             maxSteps: 5,
+            onStepFinish: ({ toolCalls, toolResults, text, finishReason }) => {
+                if (toolCalls?.length) {
+                    console.log("🔧 Tool calls:", JSON.stringify(toolCalls, null, 2));
+                }
+                if (toolResults?.length) {
+                    console.log("✅ Tool results:", JSON.stringify(toolResults, null, 2));
+                }
+                if (text) {
+                    console.log("💬 Text:", text.substring(0, 200));
+                }
+                console.log("📍 Finish reason:", finishReason);
+            },
         });
 
         result.pipeDataStreamToResponse(res);

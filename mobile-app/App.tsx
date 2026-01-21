@@ -64,6 +64,11 @@ function CalendarStackNavigator() {
                 component={TaskDetailScreen}
                 options={{ animation: "slide_from_right" }}
             />
+            <CalendarStack.Screen
+                name="TaskForm"
+                component={TaskFormScreen}
+                options={{ animation: "slide_from_right" }}
+            />
         </CalendarStack.Navigator>
     );
 }
