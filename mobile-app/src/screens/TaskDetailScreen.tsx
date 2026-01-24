@@ -9,8 +9,10 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
+import { tasksApi } from "../services/api";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
-import { Task, TaskStatus } from "../types";
+import { Task, TaskStatus, TaskOrEvent } from "../types";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import type { TasksStackParamList } from "../navigation/types";
 
@@ -23,7 +25,17 @@ type TaskDetailRouteParams = {
 export function TaskDetailScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<TasksStackParamList>>();
     const route = useRoute<RouteProp<TaskDetailRouteParams, "TaskDetail">>();
-    const task = route.params.task;
+    const routeTask = route.params.task;
+
+    // Subscribe to the tasks query to get live updates from cache
+    // Use the same query key as WorkPlannerScreen for tasks
+    const { data } = useQuery({
+        queryKey: ["tasks"],
+        queryFn: () => tasksApi.getTasks({ taskOrEvent: TaskOrEvent.TASK }),
+    });
+
+    // Get the latest task from cache, falling back to route params
+    const task = data?.tasks?.find((t) => t.taskId === routeTask.taskId) ?? routeTask;
 
     const { updateMutation } = useTaskMutations({
         onUpdateSuccess: () => navigation.goBack(),

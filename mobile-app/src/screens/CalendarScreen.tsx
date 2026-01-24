@@ -83,10 +83,10 @@ export function CalendarScreen() {
             };
         }
         const monthStart = getMonthStart(currentDate);
-        const fourMonthsAhead = new Date(currentDate.getFullYear(), currentDate.getMonth() + 4, 0);
+        const twoMonthsAhead = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0);
         return {
             start: getWeekStart(monthStart),
-            end: getWeekEnd(fourMonthsAhead),
+            end: getWeekEnd(twoMonthsAhead),
         };
     }, [currentDate, viewMode]);
 

@@ -7,7 +7,6 @@ import {
     Pressable,
     ActivityIndicator,
     SafeAreaView,
-    Modal,
     RefreshControl,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { tasksApi } from "../services/api";
 import { useTaskMutations } from "../hooks/useTaskMutations";
+import { BottomSheet } from "../components/BottomSheet";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import {
     Task,
@@ -137,6 +137,7 @@ export function WorkPlannerScreen() {
                 <Pressable
                     style={styles.taskContent}
                     onPress={() => handleTaskPress(task)}
+                    onLongPress={() => handleMoveTask(task)}
                 >
                     <Text
                         style={[styles.taskName, isCompleted && styles.taskNameCompleted]}
@@ -201,76 +202,57 @@ export function WorkPlannerScreen() {
         );
     };
 
-    const renderMoveModal = () => (
-        <Modal
+    const renderMoveSheet = () => (
+        <BottomSheet
             visible={showMoveModal}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowMoveModal(false)}
+            onClose={() => setShowMoveModal(false)}
+            title={selectedTask?.isRecurring ? "Create Task For" : "Move To"}
         >
             <Pressable
-                style={styles.modalOverlay}
-                onPress={() => setShowMoveModal(false)}
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.TODAY)}
             >
-                <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-                    <Text style={styles.modalTitle}>
-                        {selectedTask?.isRecurring ? "Create Task For" : "Move To"}
-                    </Text>
-
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.TODAY)}
-                    >
-                        <Text style={styles.modalOptionText}>Today</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}
-                    >
-                        <Text style={styles.modalOptionText}>Today (Stretch)</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.TOMORROW)}
-                    >
-                        <Text style={styles.modalOptionText}>Tomorrow</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}
-                    >
-                        <Text style={styles.modalOptionText}>Tomorrow (Stretch)</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}
-                    >
-                        <Text style={styles.modalOptionText}>This Week</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.modalOption}
-                        onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}
-                    >
-                        <Text style={styles.modalOptionText}>This Week (Stretch)</Text>
-                    </Pressable>
-                    {!selectedTask?.isRecurring && (
-                        <Pressable
-                            style={styles.modalOption}
-                            onPress={() => handleMoveTo(undefined)}
-                        >
-                            <Text style={styles.modalOptionText}>Unplanned</Text>
-                        </Pressable>
-                    )}
-
-                    <Pressable
-                        style={styles.modalCancel}
-                        onPress={() => setShowMoveModal(false)}
-                    >
-                        <Text style={styles.modalCancelText}>Cancel</Text>
-                    </Pressable>
-                </Pressable>
+                <Text style={styles.sheetOptionText}>Today</Text>
             </Pressable>
-        </Modal>
+            <Pressable
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}
+            >
+                <Text style={styles.sheetOptionText}>Today (Stretch)</Text>
+            </Pressable>
+            <Pressable
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.TOMORROW)}
+            >
+                <Text style={styles.sheetOptionText}>Tomorrow</Text>
+            </Pressable>
+            <Pressable
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}
+            >
+                <Text style={styles.sheetOptionText}>Tomorrow (Stretch)</Text>
+            </Pressable>
+            <Pressable
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}
+            >
+                <Text style={styles.sheetOptionText}>This Week</Text>
+            </Pressable>
+            <Pressable
+                style={styles.sheetOption}
+                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}
+            >
+                <Text style={styles.sheetOptionText}>This Week (Stretch)</Text>
+            </Pressable>
+            {!selectedTask?.isRecurring && (
+                <Pressable
+                    style={styles.sheetOption}
+                    onPress={() => handleMoveTo(undefined)}
+                >
+                    <Text style={styles.sheetOptionText}>Unplanned</Text>
+                </Pressable>
+            )}
+        </BottomSheet>
     );
 
     if (isLoading) {
@@ -323,7 +305,7 @@ export function WorkPlannerScreen() {
                 <View style={styles.bottomPadding} />
             </ScrollView>
 
-            {renderMoveModal()}
+            {renderMoveSheet()}
         </SafeAreaView>
     );
 }
@@ -477,44 +459,13 @@ const styles = StyleSheet.create({
     bottomPadding: {
         height: spacing.xxl,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        justifyContent: "center" as const,
-        alignItems: "center" as const,
-    },
-    modalContent: {
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
-        width: "80%",
-        maxWidth: 300,
-    },
-    modalTitle: {
-        fontSize: fontSize.lg,
-        fontWeight: "600" as const,
-        color: colors.text,
-        marginBottom: spacing.md,
-        textAlign: "center" as const,
-    },
-    modalOption: {
+    sheetOption: {
         paddingVertical: spacing.md,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: colors.border,
     },
-    modalOptionText: {
+    sheetOptionText: {
         fontSize: fontSize.md,
         color: colors.text,
-        textAlign: "center" as const,
-    },
-    modalCancel: {
-        paddingVertical: spacing.md,
-        marginTop: spacing.sm,
-    },
-    modalCancelText: {
-        fontSize: fontSize.md,
-        color: colors.error,
-        textAlign: "center" as const,
-        fontWeight: "500" as const,
     },
 });
