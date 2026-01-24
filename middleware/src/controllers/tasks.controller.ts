@@ -21,8 +21,6 @@ export async function getTasks(req: Request, res: Response) {
     try {
         const filters: TaskFilters = req.body;
 
-        console.log("Received task fetch request with filters:", filters);
-
         // Use shared utility function to fetch tasks
         const tasks = await fetchTasks(filters);
 
@@ -94,8 +92,6 @@ export async function createNewTask(req: Request, res: Response) {
  */
 export async function updateExistingTask(req: Request, res: Response) {
     try {
-        console.log("Update task request body:", JSON.stringify(req.body, null, 2));
-
         // Parse date strings to Date objects and normalize empty strings
         const normalizedBody = normalizeOptionalFields(req.body);
         const bodyWithDates = parseDateFields(normalizedBody);

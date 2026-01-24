@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
     View,
     Text,
@@ -12,7 +12,6 @@ import {
     ActivityIndicator,
     NativeScrollEvent,
 } from "react-native";
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import Markdown from "react-native-markdown-display";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import { agentApi, ChatMessage, ToolCall } from "../services/api";
@@ -73,44 +72,7 @@ export function AgentScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
     const isNearBottomRef = useRef(true);
-    const [isListening, setIsListening] = useState(false);
     const [voiceModeVisible, setVoiceModeVisible] = useState(false);
-
-    // Speech recognition events
-    useSpeechRecognitionEvent("result", (event) => {
-        const transcript = event.results[0]?.transcript;
-        if (transcript) {
-            setInputText(transcript);
-        }
-    });
-
-    useSpeechRecognitionEvent("end", () => {
-        setIsListening(false);
-    });
-
-    useSpeechRecognitionEvent("error", () => {
-        setIsListening(false);
-    });
-
-    const toggleVoice = useCallback(async () => {
-        if (isListening) {
-            ExpoSpeechRecognitionModule.stop();
-            setIsListening(false);
-            return;
-        }
-
-        const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-        if (!granted) {
-            return;
-        }
-
-        ExpoSpeechRecognitionModule.start({
-            lang: "en-US",
-            interimResults: true,
-            continuous: false,
-        });
-        setIsListening(true);
-    }, [isListening]);
 
     const handleScroll = useCallback((event: { nativeEvent: NativeScrollEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -209,100 +171,118 @@ export function AgentScreen() {
                     <Text style={styles.subtitle}>AI Assistant</Text>
                 </View>
                 <View style={styles.headerButtons}>
-                    <Pressable style={styles.headerButton} onPress={() => setVoiceModeVisible(true)}>
-                        <Text style={styles.headerButtonIcon}>🎙</Text>
-                    </Pressable>
+                    <View style={styles.modeToggle}>
+                        <Pressable
+                            style={[styles.modeOption, !voiceModeVisible && styles.modeOptionActive]}
+                            onPress={() => setVoiceModeVisible(false)}
+                        >
+                            <Text style={[styles.modeOptionText, !voiceModeVisible && styles.modeOptionTextActive]}>
+                                Text
+                            </Text>
+                        </Pressable>
+                        <Pressable
+                            style={[styles.modeOption, voiceModeVisible && styles.modeOptionActive]}
+                            onPress={() => setVoiceModeVisible(true)}
+                        >
+                            <Text style={[styles.modeOptionText, voiceModeVisible && styles.modeOptionTextActive]}>
+                                Voice
+                            </Text>
+                        </Pressable>
+                    </View>
                     {messages.length > 0 && (
                         <Pressable style={styles.headerButton} onPress={handleNewChat}>
-                            <Text style={styles.headerButtonIcon}>✎</Text>
+                            <Text style={styles.headerButtonIcon}>+</Text>
                         </Pressable>
                     )}
                 </View>
             </View>
 
-            <VoiceMode visible={voiceModeVisible} onClose={() => setVoiceModeVisible(false)} />
-
-            <KeyboardAvoidingView
-                style={styles.chatContainer}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-            >
-                <ScrollView
-                    ref={scrollViewRef}
-                    style={styles.messagesContainer}
-                    contentContainerStyle={styles.messagesContent}
-                    onContentSizeChange={handleContentSizeChange}
-                    onScroll={handleScroll}
-                    scrollEventThrottle={100}
-                    keyboardShouldPersistTaps="handled"
+            {voiceModeVisible ? (
+                <VoiceMode visible={voiceModeVisible} />
+            ) : (
+                <KeyboardAvoidingView
+                    style={styles.chatContainer}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
                 >
-                    {messages.length === 0 && !isLoading ? (
-                        <View style={styles.emptyState}>
-                            <Text style={styles.emptyTitle}>Hello!</Text>
-                            <Text style={styles.emptySubtitle}>
-                                Ask me to create tasks, check your schedule, or manage your to-dos.
-                            </Text>
-                        </View>
-                    ) : (
-                        <>
-                            {messages.map((message) => (
-                                <View key={message.id}>
-                                    {message.role === "user" ? (
-                                        <View style={styles.userBubble}>
-                                            <Text style={styles.userText}>{message.content}</Text>
-                                        </View>
-                                    ) : (
-                                        <View style={styles.assistantContainer}>
-                                            {Array.from(message.toolCalls.values()).map((tc) => (
-                                                <ToolCallBubble key={tc.toolCallId} toolCall={tc} />
-                                            ))}
-                                            {message.content ? (
-                                                <Markdown style={markdownStyles}>{message.content}</Markdown>
-                                            ) : message.isStreaming && message.toolCalls.size === 0 ? (
-                                                <View style={styles.typingIndicator}>
-                                                    <View style={styles.typingDot} />
-                                                    <View style={styles.typingDot} />
-                                                    <View style={styles.typingDot} />
-                                                </View>
-                                            ) : null}
-                                        </View>
-                                    )}
-                                </View>
-                            ))}
-                        </>
-                    )}
-                </ScrollView>
-
-                <View style={styles.inputWrapper}>
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            value={inputText}
-                            onChangeText={setInputText}
-                            placeholder={isListening ? "Listening..." : "Message..."}
-                            placeholderTextColor={isListening ? colors.primary : colors.textMuted}
-                            multiline
-                            maxLength={2000}
-                        />
-                        {inputText.trim() ? (
-                            <Pressable
-                                style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
-                                onPress={handleSend}
-                                disabled={isLoading}
-                            >
-                                <Text style={[styles.sendIcon, isLoading && styles.sendIconDisabled]}>↑</Text>
-                            </Pressable>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.messagesContainer}
+                        contentContainerStyle={styles.messagesContent}
+                        onContentSizeChange={handleContentSizeChange}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={100}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {messages.length === 0 && !isLoading ? (
+                            <View style={styles.emptyState}>
+                                <Text style={styles.emptyTitle}>Hello!</Text>
+                                <Text style={styles.emptySubtitle}>
+                                    Ask me to create tasks, check your schedule, or manage your to-dos.
+                                </Text>
+                            </View>
                         ) : (
-                            <Pressable
-                                style={[styles.micButton, isListening && styles.micButtonActive]}
-                                onPress={toggleVoice}
-                            >
-                                <Text style={[styles.micIcon, isListening && styles.micIconActive]}>🎙</Text>
-                            </Pressable>
+                            <>
+                                {messages.map((message) => (
+                                    <View key={message.id}>
+                                        {message.role === "user" ? (
+                                            <View style={styles.userBubble}>
+                                                <Text style={styles.userText}>{message.content}</Text>
+                                            </View>
+                                        ) : (
+                                            <View style={styles.assistantContainer}>
+                                                {Array.from(message.toolCalls.values()).map((tc) => (
+                                                    <ToolCallBubble key={tc.toolCallId} toolCall={tc} />
+                                                ))}
+                                                {message.content ? (
+                                                    <Markdown style={markdownStyles}>{message.content}</Markdown>
+                                                ) : message.isStreaming && message.toolCalls.size === 0 ? (
+                                                    <View style={styles.typingIndicator}>
+                                                        <View style={styles.typingDot} />
+                                                        <View style={styles.typingDot} />
+                                                        <View style={styles.typingDot} />
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                        )}
+                                    </View>
+                                ))}
+                            </>
                         )}
+                    </ScrollView>
+
+                    <View style={styles.inputWrapper}>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.input}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholder="Message..."
+                                placeholderTextColor={colors.textMuted}
+                                multiline
+                                maxLength={2000}
+                            />
+                            <Pressable
+                                style={[
+                                    styles.sendButton,
+                                    (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+                                ]}
+                                onPress={handleSend}
+                                disabled={!inputText.trim() || isLoading}
+                            >
+                                <Text
+                                    style={[
+                                        styles.sendIcon,
+                                        (!inputText.trim() || isLoading) && styles.sendIconDisabled,
+                                    ]}
+                                >
+                                    ↑
+                                </Text>
+                            </Pressable>
+                        </View>
                     </View>
-                </View>
-            </KeyboardAvoidingView>
+                </KeyboardAvoidingView>
+            )}
         </SafeAreaView>
     );
 }
@@ -335,6 +315,7 @@ const styles = StyleSheet.create({
     headerButtons: {
         flexDirection: "row",
         gap: spacing.sm,
+        alignItems: "center",
     },
     headerButton: {
         width: 36,
@@ -345,8 +326,31 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerButtonIcon: {
-        fontSize: 18,
+        fontSize: 22,
         color: colors.text,
+        fontWeight: "300",
+    },
+    modeToggle: {
+        flexDirection: "row",
+        backgroundColor: colors.surface,
+        borderRadius: 18,
+        padding: 3,
+    },
+    modeOption: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 6,
+        borderRadius: 15,
+    },
+    modeOptionActive: {
+        backgroundColor: colors.primary,
+    },
+    modeOptionText: {
+        fontSize: fontSize.sm,
+        color: colors.textSecondary,
+        fontWeight: "500",
+    },
+    modeOptionTextActive: {
+        color: colors.background,
     },
     chatContainer: {
         flex: 1,
@@ -489,24 +493,6 @@ const styles = StyleSheet.create({
     },
     sendIconDisabled: {
         color: colors.textMuted,
-    },
-    micButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.surfaceElevated,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: Platform.OS === "ios" ? 2 : 0,
-    },
-    micButtonActive: {
-        backgroundColor: colors.primary,
-    },
-    micIcon: {
-        fontSize: 18,
-    },
-    micIconActive: {
-        transform: [{ scale: 1.1 }],
     },
 });
 

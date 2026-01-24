@@ -35,18 +35,6 @@ export async function chat(req: Request, res: Response) {
             messages,
             tools: agentTools,
             maxSteps: 5,
-            onStepFinish: ({ toolCalls, toolResults, text, finishReason }) => {
-                if (toolCalls?.length) {
-                    console.log("🔧 Tool calls:", JSON.stringify(toolCalls, null, 2));
-                }
-                if (toolResults?.length) {
-                    console.log("✅ Tool results:", JSON.stringify(toolResults, null, 2));
-                }
-                if (text) {
-                    console.log("💬 Text:", text.substring(0, 200));
-                }
-                console.log("📍 Finish reason:", finishReason);
-            },
         });
 
         result.pipeDataStreamToResponse(res);

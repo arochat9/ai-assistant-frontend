@@ -5,7 +5,7 @@ import { createTask, updateTask } from "./taskMutations";
 import { TaskStatus, SubType, TaskOrEvent, Source, EventApprovalStatus, PlannedFor } from "shared";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17";
+const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime";
 
 // Tool definitions for OpenAI Realtime API format
 const realtimeTools = [
@@ -159,16 +159,19 @@ function stripWavHeader(wavBase64: string): string {
 
 // Execute tool calls
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
-    console.log(`[Realtime] Executing tool: ${name}`, args);
+    console.log(`[Voice] Tool: ${name}`, JSON.stringify(args, null, 2));
 
     try {
         switch (name) {
             case "getTasks":
                 const tasks = await fetchTasks(args);
+                console.log(`[Voice] getTasks result: ${tasks.length} tasks`);
+                tasks.forEach((t, i) => console.log(`  ${i + 1}. ${t.taskName} (${t.status})`));
                 return JSON.stringify(tasks);
 
             case "getTaskDetails":
                 const task = await fetchTaskById(args.taskId as string);
+                console.log(`[Voice] getTaskDetails result:`, task?.taskName);
                 return JSON.stringify(task);
 
             case "createTask": {
@@ -222,8 +225,6 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
 
 export function setupRealtimeWebSocket(wss: WebSocketServer) {
     wss.on("connection", (clientWs: WebSocket, req: IncomingMessage) => {
-        console.log("[Realtime] Client connected");
-
         if (!OPENAI_API_KEY) {
             clientWs.send(JSON.stringify({ type: "error", message: "OpenAI API key not configured" }));
             clientWs.close();
@@ -241,17 +242,18 @@ export function setupRealtimeWebSocket(wss: WebSocketServer) {
         let sessionConfigured = false;
 
         openaiWs.on("open", () => {
-            console.log("[Realtime] Connected to OpenAI");
-
             // Configure session with tools
+            const now = new Date();
+            const estTime = now.toLocaleString("en-US", { timeZone: "America/New_York" });
             const sessionConfig = {
                 type: "session.update",
                 session: {
                     modalities: ["text", "audio"],
-                    instructions: `You are a helpful AI assistant that manages tasks and schedules.
+                    instructions: `You are a helpful AI assistant that manages tasks and schedules. ONLY respond in english.
 You can create, update, and query tasks. Be concise and natural in conversation.
-When creating tasks, use sensible defaults. Today's date is ${new Date().toLocaleDateString()}.
-For recurring tasks, just set isRecurring=true - no need to configure frequency.`,
+The current date and time is ${estTime} EST. Always use EST timezone for all times.
+When creating tasks, use sensible defaults.
+For recurring tasks, just set isRecurring=true - no need to configure frequency. If a user asks about tasks or events, do not hallucinate, use the tools provided.`,
                     voice: "alloy",
                     input_audio_format: "pcm16",
                     output_audio_format: "pcm16",
@@ -312,11 +314,6 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                     event.type === "response.audio_transcript.done" ||
                     event.type === "response.done"
                 ) {
-                    if (event.type === "response.audio.delta") {
-                        console.log(`[Realtime] Audio delta: ${event.delta?.length || 0} chars`);
-                    } else {
-                        console.log(`[Realtime] Forwarding: ${event.type}`);
-                    }
                     clientWs.send(JSON.stringify(event));
                 }
                 // Handle errors with full details
@@ -332,42 +329,13 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                 }
                 // Log session events with details
                 else if (event.type === "session.created") {
-                    console.log(
-                        `[Realtime] ${event.type}:`,
-                        JSON.stringify(event.session?.modalities || event.session, null, 2),
-                    );
                     clientWs.send(JSON.stringify({ type: "session_ready" }));
                 } else if (event.type === "session.updated") {
-                    console.log(
-                        `[Realtime] ${event.type}:`,
-                        JSON.stringify(event.session?.modalities || event.session, null, 2),
-                    );
                     // Don't send session_ready again - already sent on session.created
                 }
-                // Log response events with details for debugging
+                // Ignore other response events
                 else if (event.type.startsWith("response.")) {
-                    if (event.type === "response.created") {
-                        console.log(
-                            `[Realtime] Event: ${event.type}`,
-                            JSON.stringify(event.response?.modalities, null, 2),
-                        );
-                    } else if (event.type === "response.output_item.added") {
-                        console.log(`[Realtime] Event: ${event.type}`, JSON.stringify(event.item, null, 2));
-                    } else if (event.type === "response.content_part.added") {
-                        console.log(`[Realtime] Event: ${event.type}`, JSON.stringify(event.part, null, 2));
-                    } else if (event.type === "response.content_part.done") {
-                        console.log(`[Realtime] Event: ${event.type}`, JSON.stringify(event.part?.type, null, 2));
-                    } else if (event.type === "response.done") {
-                        console.log(`[Realtime] Event: ${event.type} status:`, event.response?.status);
-                    } else if (event.type === "response.audio.delta") {
-                        console.log(`[Realtime] Audio delta received: ${event.delta?.length || 0} chars`);
-                    } else {
-                        console.log(`[Realtime] Event: ${event.type}`);
-                    }
-                }
-                // Log all other events
-                else {
-                    console.log(`[Realtime] Event: ${event.type}`);
+                    // Silent
                 }
             } catch (error) {
                 console.error("[Realtime] Error processing OpenAI message:", error);
@@ -380,7 +348,6 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
         });
 
         openaiWs.on("close", () => {
-            console.log("[Realtime] OpenAI connection closed");
             clientWs.close();
         });
 
@@ -396,8 +363,6 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                     const wavBase64 = message.audio;
                     const pcmBase64 = stripWavHeader(wavBase64);
 
-                    console.log(`[Realtime] Received audio: ${wavBase64.length} chars, PCM: ${pcmBase64.length} chars`);
-
                     openaiWs.send(
                         JSON.stringify({
                             type: "input_audio_buffer.append",
@@ -405,7 +370,6 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
                         }),
                     );
                 } else if (message.type === "commit_audio") {
-                    console.log("[Realtime] Committing audio buffer");
                     openaiWs.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
                     openaiWs.send(JSON.stringify({ type: "response.create" }));
                 } else if (message.type === "cancel") {
@@ -426,7 +390,6 @@ For recurring tasks, just set isRecurring=true - no need to configure frequency.
         });
 
         clientWs.on("close", () => {
-            console.log("[Realtime] Client disconnected");
             openaiWs.close();
         });
 

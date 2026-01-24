@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, Modal, Animated } from "react-native";
+import { View, Text, StyleSheet, Pressable, Animated, ScrollView } from "react-native";
 import { colors, spacing, fontSize } from "../theme";
 import { useRealtimeAudio } from "../hooks/useRealtimeAudio";
 
@@ -9,10 +9,9 @@ type VoiceState = "connecting" | "idle" | "listening" | "processing" | "speaking
 
 interface VoiceModeProps {
     visible: boolean;
-    onClose: () => void;
 }
 
-export function VoiceMode({ visible, onClose }: VoiceModeProps) {
+export function VoiceMode({ visible }: VoiceModeProps) {
     const [state, setState] = useState<VoiceState>("connecting");
     const [transcript, setTranscript] = useState("");
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -102,9 +101,9 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
     }, [visible]);
 
     const handleTap = useCallback(async () => {
-        if (state === "connecting" || state === "processing" || busyRef.current) return;
+        if (state === "connecting" || state === "processing") return;
 
-        if (state === "idle") {
+        if (state === "idle" && !busyRef.current) {
             if (await audio.startRecording()) setState("listening");
         } else if (state === "listening") {
             const pcm16 = audio.stopRecording();
@@ -128,15 +127,14 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
     const handleClose = useCallback(() => {
         audio.cleanup();
         wsRef.current?.close();
-        onClose();
-    }, [audio, onClose]);
+    }, [audio]);
 
     const stateText = {
         connecting: "Connecting...",
         listening: "Listening...",
         processing: "Thinking...",
         speaking: transcript || "...",
-        idle: "Tap to speak",
+        idle: "",
     }[state];
 
     const stateColor = {
@@ -147,82 +145,68 @@ export function VoiceMode({ visible, onClose }: VoiceModeProps) {
         idle: colors.textMuted,
     }[state];
 
+    if (!visible) return null;
+
     return (
-        <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={handleClose}>
-            <View style={styles.container}>
-                <Pressable style={styles.closeButton} onPress={handleClose}>
-                    <Text style={styles.closeIcon}>✕</Text>
+        <View style={styles.container}>
+            {state === "speaking" && transcript ? (
+                <ScrollView style={styles.transcriptScroll} contentContainerStyle={styles.transcriptContent}>
+                    <Text style={styles.transcriptText}>{transcript}</Text>
+                </ScrollView>
+            ) : (
+                <View style={styles.spacer} />
+            )}
+            <View style={styles.orbSection}>
+                <Text style={styles.stateText}>{state === "speaking" ? "Tap to stop" : stateText}</Text>
+                <Pressable
+                    onPress={handleTap}
+                    style={styles.orbContainer}
+                    disabled={state === "connecting" || state === "processing"}
+                >
+                    <Animated.View
+                        style={[styles.orb, { backgroundColor: stateColor, transform: [{ scale: pulseAnim }] }]}
+                    />
+                    <View style={styles.orbInner} />
                 </Pressable>
-
-                <View style={styles.content}>
-                    <Pressable
-                        onPress={handleTap}
-                        style={styles.orbContainer}
-                        disabled={state === "connecting" || state === "processing"}
-                    >
-                        <Animated.View
-                            style={[styles.orb, { backgroundColor: stateColor, transform: [{ scale: pulseAnim }] }]}
-                        />
-                        <View style={styles.orbInner} />
-                    </Pressable>
-                    <Text style={styles.stateText} numberOfLines={3}>
-                        {stateText}
-                    </Text>
-                    {state === "idle" && <Text style={styles.hint}>Tap to start talking</Text>}
-                </View>
-
-                {(state === "listening" || state === "speaking") && (
-                    <Pressable style={styles.endButton} onPress={handleClose}>
-                        <Text style={styles.endText}>End</Text>
-                    </Pressable>
-                )}
             </View>
-        </Modal>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    closeButton: {
-        position: "absolute",
-        top: 60,
-        right: 20,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: colors.surface,
-        justifyContent: "center",
+    spacer: { flex: 1 },
+    orbSection: {
         alignItems: "center",
-        zIndex: 10,
+        paddingBottom: spacing.xl * 2,
+        paddingHorizontal: spacing.xl,
     },
-    closeIcon: { fontSize: 20, color: colors.text },
-    content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: spacing.xl },
-    orbContainer: { width: 180, height: 180, justifyContent: "center", alignItems: "center", marginBottom: spacing.xl },
-    orb: { position: "absolute", width: 180, height: 180, borderRadius: 90, opacity: 0.3 },
+    orbContainer: { width: 140, height: 140, justifyContent: "center", alignItems: "center", marginTop: spacing.lg },
+    orb: { position: "absolute", width: 140, height: 140, borderRadius: 70, opacity: 0.3 },
     orbInner: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 90,
+        height: 90,
+        borderRadius: 45,
         backgroundColor: colors.surface,
         borderWidth: 3,
         borderColor: colors.border,
     },
     stateText: {
-        fontSize: fontSize.lg,
-        color: colors.text,
+        fontSize: fontSize.md,
+        color: colors.textMuted,
         textAlign: "center",
-        marginBottom: spacing.sm,
-        maxWidth: "80%",
     },
-    hint: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: "center" },
-    endButton: {
-        position: "absolute",
-        bottom: 60,
-        alignSelf: "center",
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        backgroundColor: colors.surface,
-        borderRadius: 24,
+    transcriptScroll: {
+        flex: 1,
+        marginHorizontal: spacing.lg,
+        marginTop: spacing.xl,
     },
-    endText: { fontSize: fontSize.md, color: colors.text, fontWeight: "500" },
+    transcriptContent: {
+        paddingBottom: spacing.xl,
+    },
+    transcriptText: {
+        fontSize: fontSize.md,
+        color: colors.text,
+        lineHeight: fontSize.md * 1.6,
+    },
 });
