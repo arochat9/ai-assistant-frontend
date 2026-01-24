@@ -1,12 +1,5 @@
 import React from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    Pressable,
-    SafeAreaView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
@@ -220,9 +213,7 @@ export function TaskDetailScreen() {
                     ]}
                     onPress={handleToggleStatus}
                 >
-                    <Text style={styles.actionButtonText}>
-                        {isCompleted ? "Reopen Task" : "Mark Complete"}
-                    </Text>
+                    <Text style={styles.actionButtonText}>{isCompleted ? "Reopen Task" : "Mark Complete"}</Text>
                 </Pressable>
 
                 <View style={styles.bottomPadding} />

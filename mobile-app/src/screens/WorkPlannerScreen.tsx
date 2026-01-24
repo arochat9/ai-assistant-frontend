@@ -16,13 +16,7 @@ import { tasksApi } from "../services/api";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import { BottomSheet } from "../components/BottomSheet";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
-import {
-    Task,
-    TaskStatus,
-    TaskOrEvent,
-    PlannedFor,
-    Source,
-} from "../types";
+import { Task, TaskStatus, TaskOrEvent, PlannedFor, Source } from "../types";
 
 type PlannerSection = {
     key: string;
@@ -49,13 +43,13 @@ export function WorkPlannerScreen() {
         if (!data?.tasks) return [];
 
         const todayTasks = data.tasks.filter(
-            (t) => t.plannedFor === PlannedFor.TODAY || t.plannedFor === PlannedFor.TODAY_STRETCH_GOAL
+            (t) => t.plannedFor === PlannedFor.TODAY || t.plannedFor === PlannedFor.TODAY_STRETCH_GOAL,
         );
         const tomorrowTasks = data.tasks.filter(
-            (t) => t.plannedFor === PlannedFor.TOMORROW || t.plannedFor === PlannedFor.TOMORROW_STRETCH_GOAL
+            (t) => t.plannedFor === PlannedFor.TOMORROW || t.plannedFor === PlannedFor.TOMORROW_STRETCH_GOAL,
         );
         const weekTasks = data.tasks.filter(
-            (t) => t.plannedFor === PlannedFor.THIS_WEEK || t.plannedFor === PlannedFor.THIS_WEEK_STRETCH_GOAL
+            (t) => t.plannedFor === PlannedFor.THIS_WEEK || t.plannedFor === PlannedFor.THIS_WEEK_STRETCH_GOAL,
         );
         const recurringTasks = data.tasks.filter((t) => t.isRecurring && t.status === TaskStatus.OPEN);
         const unplannedTasks = data.tasks.filter((t) => !t.plannedFor && !t.isRecurring);
@@ -69,66 +63,75 @@ export function WorkPlannerScreen() {
         ];
     }, [data?.tasks]);
 
-    const handleCreateTask = useCallback((plannedFor?: PlannedFor, isRecurring?: boolean) => {
-        navigation.navigate("TaskForm", { defaultPlannedFor: plannedFor, defaultIsRecurring: isRecurring });
-    }, [navigation]);
+    const handleCreateTask = useCallback(
+        (plannedFor?: PlannedFor, isRecurring?: boolean) => {
+            navigation.navigate("TaskForm", { defaultPlannedFor: plannedFor, defaultIsRecurring: isRecurring });
+        },
+        [navigation],
+    );
 
-    const handleTaskPress = useCallback((task: Task) => {
-        navigation.navigate("TaskDetail", { task });
-    }, [navigation]);
+    const handleTaskPress = useCallback(
+        (task: Task) => {
+            navigation.navigate("TaskDetail", { task });
+        },
+        [navigation],
+    );
 
     const handleMoveTask = useCallback((task: Task) => {
         setSelectedTask(task);
         setShowMoveModal(true);
     }, []);
 
-    const handleToggleStatus = useCallback((task: Task) => {
-        const newStatus = task.status === TaskStatus.CLOSED ? TaskStatus.OPEN : TaskStatus.CLOSED;
-        updateMutation.mutate({
-            taskId: task.taskId,
-            taskOrEvent: task.taskOrEvent,
-            status: newStatus,
-            subType: task.subType,
-        });
-    }, [updateMutation]);
-
-    const handleMoveTo = useCallback(async (plannedFor?: PlannedFor) => {
-        if (!selectedTask) return;
-
-        if (selectedTask.isRecurring) {
-            await createMutation.mutateAsync({
-                taskName: selectedTask.taskName,
-                status: TaskStatus.OPEN,
-                subType: selectedTask.subType,
-                taskOrEvent: TaskOrEvent.TASK,
-                plannedFor,
-                userNotes: selectedTask.userNotes,
-                isRecurring: false,
-                source: Source.USER,
+    const handleToggleStatus = useCallback(
+        (task: Task) => {
+            const newStatus = task.status === TaskStatus.CLOSED ? TaskStatus.OPEN : TaskStatus.CLOSED;
+            updateMutation.mutate({
+                taskId: task.taskId,
+                taskOrEvent: task.taskOrEvent,
+                status: newStatus,
+                subType: task.subType,
             });
-        } else {
-            await updateMutation.mutateAsync({
-                taskId: selectedTask.taskId,
-                taskOrEvent: selectedTask.taskOrEvent,
-                status: selectedTask.status,
-                subType: selectedTask.subType,
-                plannedFor,
-            });
-        }
+        },
+        [updateMutation],
+    );
 
-        setShowMoveModal(false);
-        setSelectedTask(null);
-    }, [selectedTask, updateMutation, createMutation]);
+    const handleMoveTo = useCallback(
+        async (plannedFor?: PlannedFor) => {
+            if (!selectedTask) return;
+
+            if (selectedTask.isRecurring) {
+                await createMutation.mutateAsync({
+                    taskName: selectedTask.taskName,
+                    status: TaskStatus.OPEN,
+                    subType: selectedTask.subType,
+                    taskOrEvent: TaskOrEvent.TASK,
+                    plannedFor,
+                    userNotes: selectedTask.userNotes,
+                    isRecurring: false,
+                    source: Source.USER,
+                });
+            } else {
+                await updateMutation.mutateAsync({
+                    taskId: selectedTask.taskId,
+                    taskOrEvent: selectedTask.taskOrEvent,
+                    status: selectedTask.status,
+                    subType: selectedTask.subType,
+                    plannedFor,
+                });
+            }
+
+            setShowMoveModal(false);
+            setSelectedTask(null);
+        },
+        [selectedTask, updateMutation, createMutation],
+    );
 
     const renderTask = (task: Task, section: PlannerSection) => {
         const isCompleted = task.status === TaskStatus.CLOSED;
 
         return (
             <View key={task.taskId} style={styles.taskRow}>
-                <Pressable
-                    style={styles.checkbox}
-                    onPress={() => handleToggleStatus(task)}
-                >
+                <Pressable style={styles.checkbox} onPress={() => handleToggleStatus(task)}>
                     <View style={[styles.checkboxInner, isCompleted && styles.checkboxChecked]}>
                         {isCompleted && <Text style={styles.checkmark}>✓</Text>}
                     </View>
@@ -139,10 +142,7 @@ export function WorkPlannerScreen() {
                     onPress={() => handleTaskPress(task)}
                     onLongPress={() => handleMoveTask(task)}
                 >
-                    <Text
-                        style={[styles.taskName, isCompleted && styles.taskNameCompleted]}
-                        numberOfLines={2}
-                    >
+                    <Text style={[styles.taskName, isCompleted && styles.taskNameCompleted]} numberOfLines={2}>
                         {task.taskName || "Untitled"}
                     </Text>
                     {task.plannedFor && task.plannedFor.includes("Stretch") && (
@@ -150,14 +150,8 @@ export function WorkPlannerScreen() {
                     )}
                 </Pressable>
 
-                <Pressable
-                    style={styles.moveButton}
-                    onPress={() => handleMoveTask(task)}
-                    hitSlop={8}
-                >
-                    <Text style={styles.moveButtonText}>
-                        {section.isRecurring ? "+" : "→"}
-                    </Text>
+                <Pressable style={styles.moveButton} onPress={() => handleMoveTask(task)} hitSlop={8}>
+                    <Text style={styles.moveButtonText}>{section.isRecurring ? "+" : "→"}</Text>
                 </Pressable>
             </View>
         );
@@ -190,9 +184,7 @@ export function WorkPlannerScreen() {
                         {openTasks.map((task) => renderTask(task, section))}
                         {closedTasks.length > 0 && (
                             <View style={styles.completedSection}>
-                                <Text style={styles.completedLabel}>
-                                    Completed ({closedTasks.length})
-                                </Text>
+                                <Text style={styles.completedLabel}>Completed ({closedTasks.length})</Text>
                                 {closedTasks.map((task) => renderTask(task, section))}
                             </View>
                         )}
@@ -208,47 +200,26 @@ export function WorkPlannerScreen() {
             onClose={() => setShowMoveModal(false)}
             title={selectedTask?.isRecurring ? "Create Task For" : "Move To"}
         >
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.TODAY)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TODAY)}>
                 <Text style={styles.sheetOptionText}>Today</Text>
             </Pressable>
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}>
                 <Text style={styles.sheetOptionText}>Today (Stretch)</Text>
             </Pressable>
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.TOMORROW)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TOMORROW)}>
                 <Text style={styles.sheetOptionText}>Tomorrow</Text>
             </Pressable>
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}>
                 <Text style={styles.sheetOptionText}>Tomorrow (Stretch)</Text>
             </Pressable>
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}>
                 <Text style={styles.sheetOptionText}>This Week</Text>
             </Pressable>
-            <Pressable
-                style={styles.sheetOption}
-                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}
-            >
+            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}>
                 <Text style={styles.sheetOptionText}>This Week (Stretch)</Text>
             </Pressable>
             {!selectedTask?.isRecurring && (
-                <Pressable
-                    style={styles.sheetOption}
-                    onPress={() => handleMoveTo(undefined)}
-                >
+                <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(undefined)}>
                     <Text style={styles.sheetOptionText}>Unplanned</Text>
                 </Pressable>
             )}
@@ -294,11 +265,7 @@ export function WorkPlannerScreen() {
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl
-                        refreshing={isRefetching}
-                        onRefresh={refetch}
-                        tintColor={colors.primary}
-                    />
+                    <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
                 }
             >
                 {sections.map(renderSection)}

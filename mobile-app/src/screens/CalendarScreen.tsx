@@ -1,14 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    Pressable,
-    ActivityIndicator,
-    ScrollView,
-    Animated,
-} from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, Pressable, ActivityIndicator, ScrollView, Animated } from "react-native";
 import { BottomSheet } from "../components/BottomSheet";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
@@ -40,9 +31,9 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Event background colors (event color blended with dark background)
 const EVENT_BG_COLORS = {
-    primary: "#1d1e42",   // colors.primary blended
-    warning: "#3d2a0a",   // colors.warning blended
-    error: "#3f1616",     // colors.error blended
+    primary: "#1d1e42", // colors.primary blended
+    warning: "#3d2a0a", // colors.warning blended
+    error: "#3f1616", // colors.error blended
 };
 
 export function CalendarScreen() {
@@ -55,21 +46,24 @@ export function CalendarScreen() {
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastTranslateY = useRef(new Animated.Value(-20)).current;
 
-    const showToast = useCallback((message: string) => {
-        setToastMessage(message);
-        toastTranslateY.setValue(-20);
-        Animated.sequence([
-            Animated.parallel([
-                Animated.timing(toastOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-                Animated.timing(toastTranslateY, { toValue: 0, duration: 150, useNativeDriver: true }),
-            ]),
-            Animated.delay(1500),
-            Animated.parallel([
-                Animated.timing(toastOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
-                Animated.timing(toastTranslateY, { toValue: -20, duration: 150, useNativeDriver: true }),
-            ]),
-        ]).start(() => setToastMessage(null));
-    }, [toastOpacity, toastTranslateY]);
+    const showToast = useCallback(
+        (message: string) => {
+            setToastMessage(message);
+            toastTranslateY.setValue(-20);
+            Animated.sequence([
+                Animated.parallel([
+                    Animated.timing(toastOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+                    Animated.timing(toastTranslateY, { toValue: 0, duration: 150, useNativeDriver: true }),
+                ]),
+                Animated.delay(1500),
+                Animated.parallel([
+                    Animated.timing(toastOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+                    Animated.timing(toastTranslateY, { toValue: -20, duration: 150, useNativeDriver: true }),
+                ]),
+            ]).start(() => setToastMessage(null));
+        },
+        [toastOpacity, toastTranslateY],
+    );
 
     const { updateMutation } = useTaskMutations({
         onUpdateSuccess: () => showToast("Event updated"),
@@ -162,9 +156,12 @@ export function CalendarScreen() {
         setViewMode("day");
     }, []);
 
-    const handleEventPress = useCallback((event: CalendarEvent) => {
-        navigation.navigate("CalendarDetail", { task: event });
-    }, [navigation]);
+    const handleEventPress = useCallback(
+        (event: CalendarEvent) => {
+            navigation.navigate("CalendarDetail", { task: event });
+        },
+        [navigation],
+    );
 
     const handleBackToMonth = useCallback(() => {
         if (selectedDay) {
@@ -178,7 +175,8 @@ export function CalendarScreen() {
 
     const getEventColors = (event: CalendarEvent) => {
         if (event.isRejected) return { border: colors.error, bg: EVENT_BG_COLORS.error };
-        if (event.eventApprovalStatus === EventApprovalStatus.PENDING) return { border: colors.warning, bg: EVENT_BG_COLORS.warning };
+        if (event.eventApprovalStatus === EventApprovalStatus.PENDING)
+            return { border: colors.warning, bg: EVENT_BG_COLORS.warning };
         return { border: colors.primary, bg: EVENT_BG_COLORS.primary };
     };
 
@@ -199,13 +197,7 @@ export function CalendarScreen() {
     const renderCalendarEvent = (event: CalendarEvent) => {
         const { border, bg } = getEventColors(event);
         return (
-            <View
-                key={event.taskId}
-                style={[
-                    styles.calendarEvent,
-                    { backgroundColor: bg, borderLeftColor: border },
-                ]}
-            >
+            <View key={event.taskId} style={[styles.calendarEvent, { backgroundColor: bg, borderLeftColor: border }]}>
                 <Text style={[styles.calendarEventName, event.isRejected && styles.eventRejected]} numberOfLines={1}>
                     {event.taskName}
                 </Text>
@@ -236,7 +228,10 @@ export function CalendarScreen() {
                 ]}
             >
                 <View style={[styles.spanningEventInner, { backgroundColor: bg, borderLeftColor: border }]}>
-                    <Text style={[styles.spanningEventName, event.isRejected && styles.eventRejected]} numberOfLines={1}>
+                    <Text
+                        style={[styles.spanningEventName, event.isRejected && styles.eventRejected]}
+                        numberOfLines={1}
+                    >
                         {event.taskName}
                     </Text>
                 </View>
@@ -252,14 +247,16 @@ export function CalendarScreen() {
 
         return (
             <Pressable
-                style={[
-                    styles.dayCell,
-                    !isCurrentMonth && styles.dayCellOtherMonth,
-                    isToday && styles.dayCellToday,
-                ]}
+                style={[styles.dayCell, !isCurrentMonth && styles.dayCellOtherMonth, isToday && styles.dayCellToday]}
                 onPress={() => handleDayPress(day)}
             >
-                <Text style={[styles.dayNumber, isToday && styles.dayNumberToday, !isCurrentMonth && styles.dayNumberOther]}>
+                <Text
+                    style={[
+                        styles.dayNumber,
+                        isToday && styles.dayNumberToday,
+                        !isCurrentMonth && styles.dayNumberOther,
+                    ]}
+                >
                     {day.getDate()}
                 </Text>
                 {spanningEventCount > 0 && <View style={{ height: spanningEventCount * 18 }} />}
@@ -294,7 +291,8 @@ export function CalendarScreen() {
             if (editingEvent.status === TaskStatus.CLOSED) {
                 updates.status = TaskStatus.OPEN;
             }
-            updates.eventApprovalStatus = newStatus === "pending" ? EventApprovalStatus.PENDING : EventApprovalStatus.APPROVED;
+            updates.eventApprovalStatus =
+                newStatus === "pending" ? EventApprovalStatus.PENDING : EventApprovalStatus.APPROVED;
         }
 
         updateMutation.mutate({
@@ -312,7 +310,9 @@ export function CalendarScreen() {
     const renderToast = () => {
         if (!toastMessage) return null;
         return (
-            <Animated.View style={[styles.toast, { opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }]}>
+            <Animated.View
+                style={[styles.toast, { opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] }]}
+            >
                 <View style={styles.toastDot} />
                 <Text style={styles.toastText}>{toastMessage}</Text>
             </Animated.View>
@@ -327,11 +327,7 @@ export function CalendarScreen() {
         const isApproved = !isClosed && editingEvent.eventApprovalStatus === EventApprovalStatus.APPROVED;
 
         return (
-            <BottomSheet
-                visible={!!editingEvent}
-                onClose={() => setEditingEvent(null)}
-                title={editingEvent.taskName}
-            >
+            <BottomSheet visible={!!editingEvent} onClose={() => setEditingEvent(null)} title={editingEvent.taskName}>
                 <Pressable
                     style={[styles.modalOption, isPending && styles.modalOptionSelected]}
                     onPress={() => handleStatusChange("pending")}
@@ -377,7 +373,16 @@ export function CalendarScreen() {
                 <Text style={[styles.dayViewEventName, event.isRejected && styles.eventRejected]} numberOfLines={2}>
                     {event.taskName}
                 </Text>
-                <Text style={[styles.statusLabel, isClosed ? styles.statusLabelClosed : isPending ? styles.statusLabelPending : styles.statusLabelApproved]}>
+                <Text
+                    style={[
+                        styles.statusLabel,
+                        isClosed
+                            ? styles.statusLabelClosed
+                            : isPending
+                              ? styles.statusLabelPending
+                              : styles.statusLabelApproved,
+                    ]}
+                >
                     {currentStatusLabel}
                 </Text>
             </Pressable>
@@ -490,13 +495,17 @@ export function CalendarScreen() {
                             style={[styles.viewButton, viewMode === "week" && styles.viewButtonActive]}
                             onPress={() => setViewMode("week")}
                         >
-                            <Text style={[styles.viewButtonText, viewMode === "week" && styles.viewButtonTextActive]}>Week</Text>
+                            <Text style={[styles.viewButtonText, viewMode === "week" && styles.viewButtonTextActive]}>
+                                Week
+                            </Text>
                         </Pressable>
                         <Pressable
                             style={[styles.viewButton, viewMode === "month" && styles.viewButtonActive]}
                             onPress={() => setViewMode("month")}
                         >
-                            <Text style={[styles.viewButtonText, viewMode === "month" && styles.viewButtonTextActive]}>Month</Text>
+                            <Text style={[styles.viewButtonText, viewMode === "month" && styles.viewButtonTextActive]}>
+                                Month
+                            </Text>
                         </Pressable>
                     </View>
                 </View>
