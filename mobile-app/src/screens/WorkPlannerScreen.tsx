@@ -9,6 +9,7 @@ import {
     SafeAreaView,
     RefreshControl,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -78,6 +79,7 @@ export function WorkPlannerScreen() {
     );
 
     const handleMoveTask = useCallback((task: Task) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setSelectedTask(task);
         setShowMoveModal(true);
     }, []);

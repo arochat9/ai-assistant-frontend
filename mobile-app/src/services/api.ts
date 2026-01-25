@@ -10,15 +10,12 @@ import type {
     TaskChangelogsResponse,
 } from "../types";
 
-// TODO: Update this to your actual API URL
-// For development, use your local machine's IP address (not localhost)
-// e.g., "http://192.168.1.100:3000" or your deployed URL
-const API_BASE_URL = __DEV__
-    ? "http://localhost:3000" // Update with your machine's IP for physical device testing
-    : "https://your-production-url.fly.dev";
+// For physical device testing, update this to your machine's IP (e.g., "http://192.168.1.100:3000")
+// For production, use the deployed URL
+export const API_URL = "https://ai-assistant-frontend.fly.dev";
 
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },
@@ -113,7 +110,7 @@ export const agentApi = {
         const { fetch: expoFetch } = await import("expo/fetch");
 
         try {
-            const response = await expoFetch(`${API_BASE_URL}/api/agent/chat`, {
+            const response = await expoFetch(`${API_URL}/api/agent/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ messages }),

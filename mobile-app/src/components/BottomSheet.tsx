@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import { View, Text, StyleSheet, Modal, Pressable, Animated } from "react-native";
+import { View, Text, StyleSheet, Modal, Animated, PanResponder } from "react-native";
 import { colors, spacing, fontSize } from "../theme";
 
 interface BottomSheetProps {
@@ -11,34 +11,79 @@ interface BottomSheetProps {
 
 export function BottomSheet({ visible, onClose, title, children }: BottomSheetProps) {
     const sheetTranslateY = useRef(new Animated.Value(400)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    sheetTranslateY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+                    handleClose();
+                } else {
+                    Animated.spring(sheetTranslateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        damping: 20,
+                        stiffness: 200,
+                    }).start();
+                }
+            },
+        })
+    ).current;
 
     useEffect(() => {
         if (visible) {
             sheetTranslateY.setValue(400);
-            Animated.spring(sheetTranslateY, {
-                toValue: 0,
-                useNativeDriver: true,
-                damping: 20,
-                stiffness: 200,
-            }).start();
+            backdropOpacity.setValue(0);
+            Animated.parallel([
+                Animated.spring(sheetTranslateY, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    damping: 20,
+                    stiffness: 200,
+                }),
+                Animated.timing(backdropOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
         }
-    }, [visible, sheetTranslateY]);
+    }, [visible, sheetTranslateY, backdropOpacity]);
 
     const handleClose = useCallback(() => {
-        Animated.timing(sheetTranslateY, {
-            toValue: 400,
-            duration: 200,
-            useNativeDriver: true,
-        }).start(() => onClose());
-    }, [sheetTranslateY, onClose]);
+        Animated.parallel([
+            Animated.timing(sheetTranslateY, {
+                toValue: 400,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(backdropOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+        ]).start(() => onClose());
+    }, [sheetTranslateY, backdropOpacity, onClose]);
 
     if (!visible) return null;
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+        <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
             <View style={styles.overlay}>
-                <Pressable style={styles.backdrop} onPress={handleClose} />
-                <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
+                <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+                    <View style={styles.backdropTouchable} onTouchEnd={handleClose} />
+                </Animated.View>
+                <Animated.View 
+                    style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}
+                    {...panResponder.panHandlers}
+                >
                     <View style={styles.handle} />
                     {title && (
                         <>
@@ -60,6 +105,9 @@ const styles = StyleSheet.create({
     backdrop: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    backdropTouchable: {
+        flex: 1,
     },
     sheet: {
         position: "absolute",

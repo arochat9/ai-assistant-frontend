@@ -2,8 +2,10 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, Animated, ScrollView } from "react-native";
 import { colors, spacing, fontSize } from "../theme";
 import { useRealtimeAudio } from "../hooks/useRealtimeAudio";
+import { API_URL } from "../services/api";
 
-const WS_URL = __DEV__ ? "ws://localhost:3000/api/realtime" : "wss://your-production-url.fly.dev/api/realtime";
+// Use ws:// for http, wss:// for https
+const WS_URL = API_URL.replace(/^http/, "ws") + "/api/realtime";
 
 type VoiceState = "connecting" | "idle" | "listening" | "processing" | "speaking";
 
@@ -12,6 +14,7 @@ interface VoiceModeProps {
 }
 
 export function VoiceMode({ visible }: VoiceModeProps) {
+    console.log("🎤 VoiceMode rendered, visible:", visible);
     const [state, setState] = useState<VoiceState>("connecting");
     const [transcript, setTranscript] = useState("");
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -19,6 +22,7 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     const busyRef = useRef(false);
 
     const onPlaybackComplete = useCallback(() => {
+        console.log("🎤 Playback complete");
         busyRef.current = false;
         setState("idle");
         setTranscript("");
@@ -43,8 +47,10 @@ export function VoiceMode({ visible }: VoiceModeProps) {
 
     const handleMessage = useCallback(
         (data: { type: string; delta?: string; message?: string }) => {
+            console.log("🎤 WS message:", data.type);
             switch (data.type) {
                 case "session_ready":
+                    console.log("🎤 Session ready!");
                     setState("idle");
                     break;
                 case "response.audio_transcript.delta":
@@ -57,10 +63,11 @@ export function VoiceMode({ visible }: VoiceModeProps) {
                     }
                     break;
                 case "response.audio.done":
+                    console.log("🎤 Audio done");
                     audio.markStreamDone();
                     break;
                 case "error":
-                    console.error("[VoiceMode] Error:", data.message);
+                    console.error("🎤 Error:", data.message);
                     busyRef.current = false;
                     setState("idle");
                     break;
@@ -72,6 +79,7 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     // Setup WebSocket on mount
     useEffect(() => {
         if (!visible) return;
+        console.log("🎤 Setting up WebSocket to:", WS_URL);
 
         const setup = async () => {
             await audio.initAudioSession();
@@ -79,14 +87,20 @@ export function VoiceMode({ visible }: VoiceModeProps) {
 
             const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
-            ws.onopen = () => console.log("[VoiceMode] Connected");
+            ws.onopen = () => console.log("🎤 WebSocket connected!");
             ws.onmessage = (e) => {
                 try {
                     handleMessage(JSON.parse(e.data));
-                } catch {}
+                } catch (err) {
+                    console.error("🎤 Parse error:", err);
+                }
             };
-            ws.onerror = () => setState("idle");
-            ws.onclose = () => {
+            ws.onerror = (e) => {
+                console.error("🎤 WebSocket error:", e);
+                setState("idle");
+            };
+            ws.onclose = (e) => {
+                console.log("🎤 WebSocket closed:", e.code, e.reason);
                 wsRef.current = null;
             };
         };
@@ -101,18 +115,29 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     }, [visible]);
 
     const handleTap = useCallback(async () => {
+        console.log("🎤 Tap! State:", state, "Busy:", busyRef.current);
         if (state === "connecting" || state === "processing") return;
 
         if (state === "idle" && !busyRef.current) {
-            if (await audio.startRecording()) setState("listening");
+            console.log("🎤 Starting recording...");
+            if (await audio.startRecording()) {
+                console.log("🎤 Recording started!");
+                setState("listening");
+            } else {
+                console.log("🎤 Failed to start recording");
+            }
         } else if (state === "listening") {
+            console.log("🎤 Stopping recording...");
             const pcm16 = audio.stopRecording();
+            console.log("🎤 Got audio data:", pcm16 ? pcm16.length + " chars" : "null");
             if (pcm16 && wsRef.current?.readyState === WebSocket.OPEN) {
+                console.log("🎤 Sending audio to server...");
                 setState("processing");
                 busyRef.current = true;
                 wsRef.current.send(JSON.stringify({ type: "audio", audio: pcm16 }));
                 wsRef.current.send(JSON.stringify({ type: "commit_audio" }));
             } else {
+                console.log("🎤 WebSocket not ready:", wsRef.current?.readyState);
                 setState("idle");
             }
         } else if (state === "speaking") {

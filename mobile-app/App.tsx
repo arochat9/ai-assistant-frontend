@@ -4,13 +4,14 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { AgentScreen } from "./src/screens/AgentScreen";
 import { TasksScreen } from "./src/screens/TasksScreen";
 import { TaskDetailScreen } from "./src/screens/TaskDetailScreen";
 import { TaskFormScreen } from "./src/screens/TaskFormScreen";
 import { WorkPlannerScreen } from "./src/screens/WorkPlannerScreen";
 import { CalendarScreen } from "./src/screens/CalendarScreen";
-import { ChoresScreen } from "./src/screens/ChoresScreen";
+import { ChangelogScreen } from "./src/screens/ChangelogScreen";
 import { colors } from "./src/theme";
 import type { RootTabParamList, TasksStackParamList, CalendarStackParamList } from "./src/navigation/types";
 
@@ -91,38 +92,60 @@ export default function App() {
                     initialRouteName="Tasks"
                     screenOptions={{
                         headerShown: false,
-                        tabBarActiveTintColor: colors.primary,
-                        tabBarInactiveTintColor: colors.tabBarInactive,
+                        tabBarActiveTintColor: "#ffffff",
+                        tabBarInactiveTintColor: "#ffffff",
+                        tabBarShowLabel: false,
                         tabBarStyle: {
                             backgroundColor: colors.tabBarBackground,
                             borderTopColor: colors.border,
+                            paddingTop: 8,
                         },
                     }}
                 >
                     <Tab.Screen
                         name="Agent"
                         component={AgentScreen}
-                        options={{ tabBarLabel: "Agent" }}
+                        options={{
+                            tabBarIcon: ({ focused, size }) => (
+                                <Ionicons name={focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"} size={size} color="#ffffff" />
+                            ),
+                        }}
                     />
                     <Tab.Screen
                         name="Tasks"
                         component={TasksStackNavigator}
-                        options={{ tabBarLabel: "Tasks" }}
+                        options={{
+                            tabBarIcon: ({ focused, size }) => (
+                                <Ionicons name={focused ? "checkbox" : "checkbox-outline"} size={size} color="#ffffff" />
+                            ),
+                        }}
                     />
                     <Tab.Screen
                         name="WorkPlanner"
                         component={PlannerStackNavigator}
-                        options={{ tabBarLabel: "Planner" }}
+                        options={{
+                            tabBarIcon: ({ focused, size }) => (
+                                <Ionicons name={focused ? "list" : "list-outline"} size={size} color="#ffffff" />
+                            ),
+                        }}
                     />
                     <Tab.Screen
                         name="Calendar"
                         component={CalendarStackNavigator}
-                        options={{ tabBarLabel: "Calendar" }}
+                        options={{
+                            tabBarIcon: ({ focused, size }) => (
+                                <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color="#ffffff" />
+                            ),
+                        }}
                     />
                     <Tab.Screen
-                        name="Chores"
-                        component={ChoresScreen}
-                        options={{ tabBarLabel: "Chores" }}
+                        name="Changelog"
+                        component={ChangelogScreen}
+                        options={{
+                            tabBarIcon: ({ focused, size }) => (
+                                <Ionicons name={focused ? "time" : "time-outline"} size={size} color="#ffffff" />
+                            ),
+                        }}
                     />
                 </Tab.Navigator>
                 </NavigationContainer>

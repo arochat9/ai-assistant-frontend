@@ -9,7 +9,7 @@ export type RootTabParamList = {
     Tasks: undefined;
     WorkPlanner: undefined;
     Calendar: undefined;
-    Chores: undefined;
+    Changelog: undefined;
 };
 
 // Stack Navigator for Tasks (shared by Tasks and Planner tabs)

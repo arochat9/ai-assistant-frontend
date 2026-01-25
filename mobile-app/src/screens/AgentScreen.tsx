@@ -67,6 +67,7 @@ function ToolCallBubble({ toolCall }: { toolCall: ToolCall }) {
 }
 
 export function AgentScreen() {
+    console.log("🔥🔥🔥 AGENT SCREEN LOADED 🔥🔥🔥");
     const [messages, setMessages] = useState<DisplayMessage[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -202,8 +203,7 @@ export function AgentScreen() {
             ) : (
                 <KeyboardAvoidingView
                     style={styles.chatContainer}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
                 >
                     <ScrollView
                         ref={scrollViewRef}
@@ -213,6 +213,7 @@ export function AgentScreen() {
                         onScroll={handleScroll}
                         scrollEventThrottle={100}
                         keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="interactive"
                     >
                         {messages.length === 0 && !isLoading ? (
                             <View style={styles.emptyState}>
