@@ -11,9 +11,7 @@ import type {
 } from "../types";
 
 // localhost works for simulator, use your Mac's IP for physical device testing
-export const API_URL = __DEV__
-    ? "http://localhost:3000"
-    : "https://ai-assistant-frontend.fly.dev";
+export const API_URL = __DEV__ ? "http://localhost:3000" : "https://ai-assistant-frontend.fly.dev";
 
 const api = axios.create({
     baseURL: API_URL,

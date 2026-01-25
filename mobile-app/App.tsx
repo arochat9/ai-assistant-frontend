@@ -30,11 +30,7 @@ function TasksStackNavigator() {
                 component={TaskDetailScreen}
                 options={{ animation: "slide_from_right" }}
             />
-            <TasksStack.Screen
-                name="TaskForm"
-                component={TaskFormScreen}
-                options={{ animation: "slide_from_right" }}
-            />
+            <TasksStack.Screen name="TaskForm" component={TaskFormScreen} options={{ animation: "slide_from_right" }} />
         </TasksStack.Navigator>
     );
 }
@@ -102,66 +98,78 @@ export default function App() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <QueryClientProvider client={queryClient}>
                 <NavigationContainer>
-                <Tab.Navigator
-                    initialRouteName="Tasks"
-                    screenOptions={{
-                        headerShown: false,
-                        tabBarActiveTintColor: "#ffffff",
-                        tabBarInactiveTintColor: "#ffffff",
-                        tabBarShowLabel: false,
-                        tabBarStyle: {
-                            backgroundColor: colors.tabBarBackground,
-                            borderTopColor: colors.border,
-                            paddingTop: 8,
-                        },
-                    }}
-                >
-                    <Tab.Screen
-                        name="Agent"
-                        component={AgentScreen}
-                        options={{
-                            tabBarIcon: ({ focused, size }) => (
-                                <Ionicons name={focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"} size={size} color="#ffffff" />
-                            ),
+                    <Tab.Navigator
+                        initialRouteName="Tasks"
+                        screenOptions={{
+                            headerShown: false,
+                            tabBarActiveTintColor: "#ffffff",
+                            tabBarInactiveTintColor: "#ffffff",
+                            tabBarShowLabel: false,
+                            tabBarStyle: {
+                                backgroundColor: colors.tabBarBackground,
+                                borderTopColor: colors.border,
+                                paddingTop: 8,
+                            },
                         }}
-                    />
-                    <Tab.Screen
-                        name="Tasks"
-                        component={TasksStackNavigator}
-                        options={{
-                            tabBarIcon: ({ focused, size }) => (
-                                <Ionicons name={focused ? "checkbox" : "checkbox-outline"} size={size} color="#ffffff" />
-                            ),
-                        }}
-                    />
-                    <Tab.Screen
-                        name="WorkPlanner"
-                        component={PlannerStackNavigator}
-                        options={{
-                            tabBarIcon: ({ focused, size }) => (
-                                <Ionicons name={focused ? "list" : "list-outline"} size={size} color="#ffffff" />
-                            ),
-                        }}
-                    />
-                    <Tab.Screen
-                        name="Calendar"
-                        component={CalendarStackNavigator}
-                        options={{
-                            tabBarIcon: ({ focused, size }) => (
-                                <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color="#ffffff" />
-                            ),
-                        }}
-                    />
-                    <Tab.Screen
-                        name="Changelog"
-                        component={ChangelogStackNavigator}
-                        options={{
-                            tabBarIcon: ({ focused, size }) => (
-                                <Ionicons name={focused ? "time" : "time-outline"} size={size} color="#ffffff" />
-                            ),
-                        }}
-                    />
-                </Tab.Navigator>
+                    >
+                        <Tab.Screen
+                            name="Agent"
+                            component={AgentScreen}
+                            options={{
+                                tabBarIcon: ({ focused, size }) => (
+                                    <Ionicons
+                                        name={focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+                                        size={size}
+                                        color="#ffffff"
+                                    />
+                                ),
+                            }}
+                        />
+                        <Tab.Screen
+                            name="Tasks"
+                            component={TasksStackNavigator}
+                            options={{
+                                tabBarIcon: ({ focused, size }) => (
+                                    <Ionicons
+                                        name={focused ? "checkbox" : "checkbox-outline"}
+                                        size={size}
+                                        color="#ffffff"
+                                    />
+                                ),
+                            }}
+                        />
+                        <Tab.Screen
+                            name="WorkPlanner"
+                            component={PlannerStackNavigator}
+                            options={{
+                                tabBarIcon: ({ focused, size }) => (
+                                    <Ionicons name={focused ? "list" : "list-outline"} size={size} color="#ffffff" />
+                                ),
+                            }}
+                        />
+                        <Tab.Screen
+                            name="Calendar"
+                            component={CalendarStackNavigator}
+                            options={{
+                                tabBarIcon: ({ focused, size }) => (
+                                    <Ionicons
+                                        name={focused ? "calendar" : "calendar-outline"}
+                                        size={size}
+                                        color="#ffffff"
+                                    />
+                                ),
+                            }}
+                        />
+                        <Tab.Screen
+                            name="Changelog"
+                            component={ChangelogStackNavigator}
+                            options={{
+                                tabBarIcon: ({ focused, size }) => (
+                                    <Ionicons name={focused ? "time" : "time-outline"} size={size} color="#ffffff" />
+                                ),
+                            }}
+                        />
+                    </Tab.Navigator>
                 </NavigationContainer>
                 <StatusBar style="light" />
             </QueryClientProvider>

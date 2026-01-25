@@ -38,14 +38,17 @@ export async function getTaskChanges(req: Request, res: Response) {
         }
 
         // Group snapshots by taskId
-        const snapshotsByTask = (changelogs ?? []).reduce((acc, snapshot) => {
-            const taskId = snapshot.taskId ?? "";
-            if (!acc[taskId]) {
-                acc[taskId] = [];
-            }
-            acc[taskId].push(snapshot);
-            return acc;
-        }, {} as Record<string, Osdk.Instance<TaskChangelog>[]>);
+        const snapshotsByTask = (changelogs ?? []).reduce(
+            (acc, snapshot) => {
+                const taskId = snapshot.taskId ?? "";
+                if (!acc[taskId]) {
+                    acc[taskId] = [];
+                }
+                acc[taskId].push(snapshot);
+                return acc;
+            },
+            {} as Record<string, Osdk.Instance<TaskChangelog>[]>,
+        );
 
         const changes: TaskChangelogType[] = [];
 
