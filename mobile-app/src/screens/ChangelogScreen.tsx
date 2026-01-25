@@ -28,12 +28,15 @@ export function ChangelogScreen() {
 
     // Group changes by snapshotId and sort by timestamp
     const sortedGroups = useMemo(() => {
-        const grouped = changelogs.reduce((groups, change) => {
-            const key = change.changelogId.split("-").slice(0, -1).join("-"); // Group by task snapshot
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(change);
-            return groups;
-        }, {} as Record<string, TaskChangelog[]>);
+        const grouped = changelogs.reduce(
+            (groups, change) => {
+                const key = change.changelogId.split("-").slice(0, -1).join("-"); // Group by task snapshot
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(change);
+                return groups;
+            },
+            {} as Record<string, TaskChangelog[]>,
+        );
 
         return Object.values(grouped).sort((a, b) => {
             const timeA = new Date(a[0].timestamp).getTime();
@@ -118,9 +121,7 @@ export function ChangelogScreen() {
                                                 <Text style={styles.oldValue}>{formatValue(change.oldValue)}</Text>
                                             )}
                                             <Text style={styles.arrow}> → </Text>
-                                            <Text style={styles.newValue}>
-                                                {formatValue(change.newValue)}
-                                            </Text>
+                                            <Text style={styles.newValue}>{formatValue(change.newValue)}</Text>
                                         </View>
                                     ))}
                                 </View>

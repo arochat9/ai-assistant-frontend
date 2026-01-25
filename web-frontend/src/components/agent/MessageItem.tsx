@@ -38,20 +38,20 @@ function ToolInvocationCard({ toolInvocation }: { toolInvocation: ToolInvocation
             </div>
             {toolName === "createTask" && args && (
                 <div className="mt-2 text-xs text-muted-foreground">
-                    <span className="font-medium">{(args as Record<string, unknown>).taskName as string}</span>
-                    {(args as Record<string, unknown>).isRecurring && <span className="ml-2">(recurring)</span>}
-                    {(args as Record<string, unknown>).subType && (
-                        <span className="ml-2">• {(args as Record<string, unknown>).subType as string}</span>
+                    <span className="font-medium">{String((args as Record<string, unknown>).taskName ?? "")}</span>
+                    {Boolean((args as Record<string, unknown>).isRecurring) && <span className="ml-2">(recurring)</span>}
+                    {Boolean((args as Record<string, unknown>).subType) && (
+                        <span className="ml-2">• {String((args as Record<string, unknown>).subType)}</span>
                     )}
                 </div>
             )}
             {toolName === "updateTask" && args && (
                 <div className="mt-2 text-xs text-muted-foreground">
-                    {(args as Record<string, unknown>).taskName && (
-                        <span className="font-medium">{(args as Record<string, unknown>).taskName as string}</span>
+                    {Boolean((args as Record<string, unknown>).taskName) && (
+                        <span className="font-medium">{String((args as Record<string, unknown>).taskName)}</span>
                     )}
-                    {(args as Record<string, unknown>).status && (
-                        <span className="ml-2">→ {(args as Record<string, unknown>).status as string}</span>
+                    {Boolean((args as Record<string, unknown>).status) && (
+                        <span className="ml-2">→ {String((args as Record<string, unknown>).status)}</span>
                     )}
                 </div>
             )}
