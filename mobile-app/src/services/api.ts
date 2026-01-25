@@ -10,9 +10,10 @@ import type {
     TaskChangelogsResponse,
 } from "../types";
 
-// For physical device testing, update this to your machine's IP (e.g., "http://192.168.1.100:3000")
-// For production, use the deployed URL
-export const API_URL = "https://ai-assistant-frontend.fly.dev";
+// localhost works for simulator, use your Mac's IP for physical device testing
+export const API_URL = __DEV__
+    ? "http://localhost:3000"
+    : "https://ai-assistant-frontend.fly.dev";
 
 const api = axios.create({
     baseURL: API_URL,

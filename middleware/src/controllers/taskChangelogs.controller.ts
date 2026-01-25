@@ -32,7 +32,10 @@ export async function getTaskChanges(req: Request, res: Response) {
         const query =
             whereConditions.length > 0 ? client(TaskChangelog).where({ $and: whereConditions }) : client(TaskChangelog);
 
-        const changelogs = await Array.fromAsync(query.asyncIter());
+        const changelogs: Osdk.Instance<TaskChangelog>[] = [];
+        for await (const item of query.asyncIter()) {
+            changelogs.push(item);
+        }
 
         // Group snapshots by taskId
         const snapshotsByTask = (changelogs ?? []).reduce((acc, snapshot) => {
@@ -54,6 +57,25 @@ export async function getTaskChanges(req: Request, res: Response) {
                 const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
                 return timeA - timeB;
             });
+
+            // Handle first snapshot (task creation)
+            if (snapshots.length > 0) {
+                const first = snapshots[0];
+                const timestamp = first.createdAt ? new Date(first.createdAt) : new Date();
+                const baseId = first.taskChangelogId ?? "";
+
+                changes.push({
+                    changelogId: `${baseId}-created`,
+                    snapshotId: baseId,
+                    taskId,
+                    taskName: first.taskName ?? "Unknown Task",
+                    fieldName: "Task Created",
+                    oldValue: undefined,
+                    newValue: first.taskName ?? undefined,
+                    timestamp,
+                    updatedBy: first.updatedBy,
+                });
+            }
 
             // Compare consecutive snapshots within the same task
             for (let i = 1; i < snapshots.length; i++) {
@@ -87,6 +109,7 @@ export async function getTaskChanges(req: Request, res: Response) {
                             changelogId: `${baseId}-${name.replace(/\s+/g, "_")}`,
                             snapshotId: baseId,
                             taskId,
+                            taskName: current.taskName ?? "Unknown Task",
                             fieldName: name,
                             oldValue: previousVal ? String(previousVal) : undefined,
                             newValue: currentVal ? String(currentVal) : undefined,
@@ -114,6 +137,7 @@ export async function getTaskChanges(req: Request, res: Response) {
                             changelogId: `${baseId}-${name.replace(/\s+/g, "_")}`,
                             snapshotId: baseId,
                             taskId,
+                            taskName: current.taskName ?? "Unknown Task",
                             fieldName: name,
                             oldValue: previousArr.length > 0 ? previousArr.join(", ") : undefined,
                             newValue: currentArr.length > 0 ? currentArr.join(", ") : undefined,
@@ -151,6 +175,7 @@ export async function getTaskChanges(req: Request, res: Response) {
                             changelogId: `${baseId}-${name.replace(/\s+/g, "_")}`,
                             snapshotId: baseId,
                             taskId,
+                            taskName: current.taskName ?? "Unknown Task",
                             fieldName: name,
                             oldValue: previousStr || undefined,
                             newValue: currentStr || undefined,

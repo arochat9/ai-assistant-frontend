@@ -113,6 +113,7 @@ export interface TaskChangelog {
     changelogId: string;
     snapshotId: string; // ID of the TaskChangelog snapshot (groups related field changes)
     taskId: string;
+    taskName: string; // Name of the task for display
     fieldName: string; // The field that changed
     oldValue?: string; // Previous value
     newValue?: string; // New value

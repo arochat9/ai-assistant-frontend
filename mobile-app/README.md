@@ -9,6 +9,10 @@ cd mobile-app
 npm install
 ```
 
+## Production
+
+run cd mobile-app && npx expo run:ios --device --configuration Release while phone is plugged in
+
 ## Development
 
 ### Run on iOS Simulator

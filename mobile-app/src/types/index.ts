@@ -127,7 +127,9 @@ export interface TaskActionResponse {
 // TaskChangelog Interface
 export interface TaskChangelog {
     changelogId: string;
+    snapshotId: string;
     taskId: string;
+    taskName: string;
     fieldName: string;
     oldValue?: string;
     newValue?: string;

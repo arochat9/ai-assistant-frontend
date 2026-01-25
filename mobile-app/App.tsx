@@ -19,6 +19,7 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 const TasksStack = createNativeStackNavigator<TasksStackParamList>();
 const PlannerStack = createNativeStackNavigator<TasksStackParamList>();
 const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
+const ChangelogStack = createNativeStackNavigator<TasksStackParamList>();
 
 function TasksStackNavigator() {
     return (
@@ -71,6 +72,19 @@ function CalendarStackNavigator() {
                 options={{ animation: "slide_from_right" }}
             />
         </CalendarStack.Navigator>
+    );
+}
+
+function ChangelogStackNavigator() {
+    return (
+        <ChangelogStack.Navigator screenOptions={{ headerShown: false }}>
+            <ChangelogStack.Screen name="ChangelogMain" component={ChangelogScreen} />
+            <ChangelogStack.Screen
+                name="TaskDetail"
+                component={TaskDetailScreen}
+                options={{ animation: "slide_from_right" }}
+            />
+        </ChangelogStack.Navigator>
     );
 }
 
@@ -140,7 +154,7 @@ export default function App() {
                     />
                     <Tab.Screen
                         name="Changelog"
-                        component={ChangelogScreen}
+                        component={ChangelogStackNavigator}
                         options={{
                             tabBarIcon: ({ focused, size }) => (
                                 <Ionicons name={focused ? "time" : "time-outline"} size={size} color="#ffffff" />

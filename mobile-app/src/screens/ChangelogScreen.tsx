@@ -19,10 +19,12 @@ import type { TaskChangelog } from "../types";
 export function ChangelogScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
-    const { data, isLoading, refetch, isRefetching } = useQuery({
+    const { data, isLoading, error, refetch, isRefetching } = useQuery({
         queryKey: ["changelogs"],
         queryFn: () => tasksApi.getTaskChangelogs({}),
     });
+
+    console.log("📋 Changelog - isLoading:", isLoading, "error:", error, "data:", data);
 
     const changelogs = data?.changelogs ?? [];
 
@@ -48,10 +50,7 @@ export function ChangelogScreen() {
     const handleRowPress = async (taskId: string) => {
         try {
             const response = await tasksApi.getTaskById(taskId);
-            navigation.navigate("Tasks", {
-                screen: "TaskDetail",
-                params: { task: response.task },
-            });
+            navigation.navigate("TaskDetail", { task: response.task });
         } catch (error) {
             console.error("Failed to fetch task:", error);
         }
@@ -107,6 +106,7 @@ export function ChangelogScreen() {
                                 style={styles.changeRow}
                                 onPress={() => handleRowPress(firstChange.taskId)}
                             >
+                                <Text style={styles.taskName}>{firstChange.taskName}</Text>
                                 <View style={styles.changeHeader}>
                                     <Text style={styles.timestamp}>{formatTimestamp(firstChange.timestamp)}</Text>
                                     <View style={styles.badge}>
@@ -174,6 +174,12 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
+    },
+    taskName: {
+        fontSize: fontSize.md,
+        fontWeight: "600",
+        color: colors.text,
+        marginBottom: spacing.xs,
     },
     changeHeader: {
         flexDirection: "row",

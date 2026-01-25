@@ -72,6 +72,10 @@ export function TasksChangelogPage() {
                         <thead className="bg-muted sticky top-0 z-10">
                             <tr>
                                 <th
+                                    className="text-left px-3 py-2 font-medium text-sm" style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))", maxWidth: "24rem", minWidth: "12rem", wordBreak: "break-word" }}>
+                                    Task Title
+                                </th>
+                                <th
                                     className="text-left px-3 py-2 font-medium text-sm whitespace-nowrap"
                                     style={{ boxShadow: "inset 0 -1px 0 0 hsl(var(--border))" }}
                                 >
@@ -100,6 +104,9 @@ export function TasksChangelogPage() {
                                         onClick={() => handleRowClick(firstChange.taskId)}
                                         className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
                                     >
+                                        <td className="p-3 text-sm font-semibold" style={{ maxWidth: "24rem", minWidth: "12rem", wordBreak: "break-word" }}>
+                                            {firstChange.taskName || <span className="italic text-muted-foreground">Untitled</span>}
+                                        </td>
                                         <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
                                             {(firstChange.timestamp instanceof Date
                                                 ? firstChange.timestamp

@@ -6,11 +6,12 @@ import { TaskChangelogFilters, TaskChangelogsResponse } from "shared";
 import type { TaskChangelog as TaskChangelogType } from "shared";
 
 export async function getMessages(req: Request, res: Response) {
-    const messages = await Array.fromAsync(
-        client(Message)
-            .where({
-                messageId: { $in: ["msg1", "msg2", "msg3"] },
-            })
-            .asyncIter(),
-    );
+    const messages: Osdk.Instance<Message>[] = [];
+    for await (const item of client(Message)
+        .where({
+            messageId: { $in: ["msg1", "msg2", "msg3"] },
+        })
+        .asyncIter()) {
+        messages.push(item);
+    }
 }
