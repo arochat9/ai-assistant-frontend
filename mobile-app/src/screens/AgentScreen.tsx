@@ -67,7 +67,6 @@ function ToolCallBubble({ toolCall }: { toolCall: ToolCall }) {
 }
 
 export function AgentScreen() {
-    console.log("🔥🔥🔥 AGENT SCREEN LOADED 🔥🔥🔥");
     const [messages, setMessages] = useState<DisplayMessage[]>([]);
     const [inputText, setInputText] = useState("");
     const [isLoading, setIsLoading] = useState(false);

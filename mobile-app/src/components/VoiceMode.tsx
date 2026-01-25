@@ -14,7 +14,6 @@ interface VoiceModeProps {
 }
 
 export function VoiceMode({ visible }: VoiceModeProps) {
-    console.log("🎤 VoiceMode rendered, visible:", visible);
     const [state, setState] = useState<VoiceState>("connecting");
     const [transcript, setTranscript] = useState("");
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -22,7 +21,6 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     const busyRef = useRef(false);
 
     const onPlaybackComplete = useCallback(() => {
-        console.log("🎤 Playback complete");
         busyRef.current = false;
         setState("idle");
         setTranscript("");
@@ -47,10 +45,8 @@ export function VoiceMode({ visible }: VoiceModeProps) {
 
     const handleMessage = useCallback(
         (data: { type: string; delta?: string; message?: string }) => {
-            console.log("🎤 WS message:", data.type);
             switch (data.type) {
                 case "session_ready":
-                    console.log("🎤 Session ready!");
                     setState("idle");
                     break;
                 case "response.audio_transcript.delta":
@@ -63,11 +59,9 @@ export function VoiceMode({ visible }: VoiceModeProps) {
                     }
                     break;
                 case "response.audio.done":
-                    console.log("🎤 Audio done");
                     audio.markStreamDone();
                     break;
                 case "error":
-                    console.error("🎤 Error:", data.message);
                     busyRef.current = false;
                     setState("idle");
                     break;
@@ -79,7 +73,6 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     // Setup WebSocket on mount
     useEffect(() => {
         if (!visible) return;
-        console.log("🎤 Setting up WebSocket to:", WS_URL);
 
         const setup = async () => {
             await audio.initAudioSession();
@@ -87,20 +80,14 @@ export function VoiceMode({ visible }: VoiceModeProps) {
 
             const ws = new WebSocket(WS_URL);
             wsRef.current = ws;
-            ws.onopen = () => console.log("🎤 WebSocket connected!");
+            ws.onopen = () => {};
             ws.onmessage = (e) => {
                 try {
                     handleMessage(JSON.parse(e.data));
-                } catch (err) {
-                    console.error("🎤 Parse error:", err);
-                }
+                } catch {}
             };
-            ws.onerror = (e) => {
-                console.error("🎤 WebSocket error:", e);
-                setState("idle");
-            };
-            ws.onclose = (e) => {
-                console.log("🎤 WebSocket closed:", e.code, e.reason);
+            ws.onerror = () => setState("idle");
+            ws.onclose = () => {
                 wsRef.current = null;
             };
         };
@@ -115,29 +102,20 @@ export function VoiceMode({ visible }: VoiceModeProps) {
     }, [visible]);
 
     const handleTap = useCallback(async () => {
-        console.log("🎤 Tap! State:", state, "Busy:", busyRef.current);
         if (state === "connecting" || state === "processing") return;
 
         if (state === "idle" && !busyRef.current) {
-            console.log("🎤 Starting recording...");
             if (await audio.startRecording()) {
-                console.log("🎤 Recording started!");
                 setState("listening");
-            } else {
-                console.log("🎤 Failed to start recording");
             }
         } else if (state === "listening") {
-            console.log("🎤 Stopping recording...");
             const pcm16 = audio.stopRecording();
-            console.log("🎤 Got audio data:", pcm16 ? pcm16.length + " chars" : "null");
             if (pcm16 && wsRef.current?.readyState === WebSocket.OPEN) {
-                console.log("🎤 Sending audio to server...");
                 setState("processing");
                 busyRef.current = true;
                 wsRef.current.send(JSON.stringify({ type: "audio", audio: pcm16 }));
                 wsRef.current.send(JSON.stringify({ type: "commit_audio" }));
             } else {
-                console.log("🎤 WebSocket not ready:", wsRef.current?.readyState);
                 setState("idle");
             }
         } else if (state === "speaking") {
