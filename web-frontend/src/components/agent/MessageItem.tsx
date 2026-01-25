@@ -39,7 +39,9 @@ function ToolInvocationCard({ toolInvocation }: { toolInvocation: ToolInvocation
             {toolName === "createTask" && args && (
                 <div className="mt-2 text-xs text-muted-foreground">
                     <span className="font-medium">{String((args as Record<string, unknown>).taskName ?? "")}</span>
-                    {Boolean((args as Record<string, unknown>).isRecurring) && <span className="ml-2">(recurring)</span>}
+                    {Boolean((args as Record<string, unknown>).isRecurring) && (
+                        <span className="ml-2">(recurring)</span>
+                    )}
                     {Boolean((args as Record<string, unknown>).subType) && (
                         <span className="ml-2">• {String((args as Record<string, unknown>).subType)}</span>
                     )}
