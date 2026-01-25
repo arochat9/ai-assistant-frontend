@@ -1,10 +1,10 @@
 {
     "expo": {
-        "name": "mobile-app",
-        "slug": "mobile-app",
-        "version": "1.0.0",
+        "name": "AI Assistant",
+        "slug": "ai-assistant",
+        "version": "3.0.0",
         "orientation": "portrait",
-        "icon": "./assets/icon.png",
+        "icon": "./assets/checklist.png",
         "userInterfaceStyle": "dark",
         "newArchEnabled": true,
         "splash": {
@@ -15,6 +15,7 @@
         "ios": {
             "supportsTablet": true,
             "bundleIdentifier": "com.anonymous.mobileapp",
+            "buildNumber": "3",
             "infoPlist": {
                 "NSMicrophoneUsageDescription": "This app uses the microphone for voice input to the AI assistant.",
                 "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."

@@ -11,9 +11,18 @@ npm install
 
 ## Production
 
-run cd mobile-app && npx expo run:ios --device --configuration Release while phone is plugged in
+run npx expo run:ios --device --configuration Release
+
+- device lets you choose your device
+- configuration release is production build
+
+Also maybe run npx expo prebuild if you need to update the icon
+
+- and go into xcode -> product -> clean build folder (clears cache I think?)
 
 ## Development
+
+run npx expo run:ios
 
 ### Run on iOS Simulator
 
