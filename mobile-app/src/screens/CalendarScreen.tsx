@@ -1,6 +1,18 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, SafeAreaView, Pressable, ActivityIndicator, ScrollView, Animated } from "react-native";
+import {
+    View,
+    Text,
+    StyleSheet,
+    SafeAreaView,
+    Pressable,
+    ActivityIndicator,
+    ScrollView,
+    Animated,
+    RefreshControl,
+    PanResponder,
+} from "react-native";
 import { BottomSheet } from "../components/BottomSheet";
+import { BottomSheetOption } from "../components/BottomSheetOption";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -84,7 +96,41 @@ export function CalendarScreen() {
         };
     }, [currentDate, viewMode]);
 
-    const { data, isLoading, error, refetch } = useQuery({
+    // Refs to hold latest navigation handlers (avoids stale closures in PanResponder)
+    const handlePreviousRef = useRef(() => {});
+    const handleNextRef = useRef(() => {});
+    const handleBackToMonthRef = useRef(() => {});
+
+    // Swipe gesture for month/week navigation
+    const swipeThreshold = 50;
+    const monthPanResponder = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gestureState) =>
+                Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 50,
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dx > swipeThreshold) {
+                    handlePreviousRef.current();
+                } else if (gestureState.dx < -swipeThreshold) {
+                    handleNextRef.current();
+                }
+            },
+        }),
+    ).current;
+
+    // Swipe gesture for day view (back to month)
+    const dayPanResponder = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (_, gestureState) =>
+                gestureState.dx > 20 && Math.abs(gestureState.dy) < 50,
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dx > swipeThreshold) {
+                    handleBackToMonthRef.current();
+                }
+            },
+        }),
+    ).current;
+
+    const { data, isLoading, error, refetch, isRefetching } = useQuery({
         queryKey: [
             "tasks",
             { taskOrEvent: TaskOrEvent.EVENT, eventStartBefore: dateRange.end, eventEndAfter: dateRange.start },
@@ -170,6 +216,11 @@ export function CalendarScreen() {
         setViewMode("month");
         setSelectedDay(null);
     }, [selectedDay]);
+
+    // Keep refs updated with latest handlers
+    handlePreviousRef.current = handlePrevious;
+    handleNextRef.current = handleNext;
+    handleBackToMonthRef.current = handleBackToMonth;
 
     const today = new Date();
 
@@ -328,30 +379,9 @@ export function CalendarScreen() {
 
         return (
             <BottomSheet visible={!!editingEvent} onClose={() => setEditingEvent(null)} title={editingEvent.taskName}>
-                <Pressable
-                    style={[styles.modalOption, isPending && styles.modalOptionSelected]}
-                    onPress={() => handleStatusChange("pending")}
-                >
-                    <View style={[styles.modalOptionDot, { backgroundColor: colors.warning }]} />
-                    <Text style={styles.modalOptionText}>Pending</Text>
-                    {isPending && <Text style={styles.modalCheckmark}>✓</Text>}
-                </Pressable>
-                <Pressable
-                    style={[styles.modalOption, isApproved && styles.modalOptionSelected]}
-                    onPress={() => handleStatusChange("approved")}
-                >
-                    <View style={[styles.modalOptionDot, { backgroundColor: colors.primary }]} />
-                    <Text style={styles.modalOptionText}>Approved</Text>
-                    {isApproved && <Text style={styles.modalCheckmark}>✓</Text>}
-                </Pressable>
-                <Pressable
-                    style={[styles.modalOption, isClosed && styles.modalOptionSelected]}
-                    onPress={() => handleStatusChange("closed")}
-                >
-                    <View style={[styles.modalOptionDot, { backgroundColor: colors.textMuted }]} />
-                    <Text style={styles.modalOptionText}>Closed</Text>
-                    {isClosed && <Text style={styles.modalCheckmark}>✓</Text>}
-                </Pressable>
+                <BottomSheetOption label="Pending" onPress={() => handleStatusChange("pending")} selected={isPending} />
+                <BottomSheetOption label="Approved" onPress={() => handleStatusChange("approved")} selected={isApproved} />
+                <BottomSheetOption label="Closed" onPress={() => handleStatusChange("closed")} selected={isClosed} />
             </BottomSheet>
         );
     };
@@ -454,7 +484,14 @@ export function CalendarScreen() {
                     </View>
                 </View>
 
-                <ScrollView style={styles.dayViewContent} contentContainerStyle={styles.dayViewContentContainer}>
+                <ScrollView
+                    style={styles.dayViewContent}
+                    contentContainerStyle={styles.dayViewContentContainer}
+                    refreshControl={
+                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+                    }
+                    {...dayPanResponder.panHandlers}
+                >
                     {dayEvents.length === 0 ? (
                         <View style={styles.noEventsContainer}>
                             <Text style={styles.noEventsText}>No events this day</Text>
@@ -476,7 +513,15 @@ export function CalendarScreen() {
             <View style={styles.header}>
                 <View style={styles.headerTop}>
                     <Text style={styles.headerTitle}>{headerTitle}</Text>
-                    <Text style={styles.eventCount}>{events.length} events</Text>
+                    <View style={styles.headerTopRight}>
+                        <Text style={styles.eventCount}>{events.length} events</Text>
+                        <Pressable
+                            style={({ pressed }) => [styles.refreshButton, pressed && styles.refreshButtonPressed]}
+                            onPress={() => refetch()}
+                        >
+                            <Text style={styles.refreshButtonText}>{isRefetching ? "..." : "↻"}</Text>
+                        </Pressable>
+                    </View>
                 </View>
                 <View style={styles.headerControls}>
                     <View style={styles.navButtons}>
@@ -521,7 +566,7 @@ export function CalendarScreen() {
             </View>
 
             {/* Calendar grid */}
-            <View style={styles.calendarGrid}>
+            <View style={styles.calendarGrid} {...monthPanResponder.panHandlers}>
                 {rows.map((row, rowIndex) => {
                     const spanningEvents = getSpanningEventsForRow(events, row);
                     return (
@@ -561,6 +606,10 @@ const styles = StyleSheet.create({
         alignItems: "center" as const,
         marginBottom: spacing.sm,
     },
+    headerTopRight: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+    },
     headerTitle: {
         fontSize: fontSize.lg,
         fontWeight: "600" as const,
@@ -569,6 +618,18 @@ const styles = StyleSheet.create({
     eventCount: {
         fontSize: fontSize.xs,
         color: colors.textMuted,
+        marginRight: spacing.xs,
+    },
+    refreshButton: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+    },
+    refreshButtonPressed: {
+        opacity: 0.5,
+    },
+    refreshButtonText: {
+        fontSize: fontSize.lg,
+        color: colors.textSecondary,
     },
     headerControls: {
         flexDirection: "row" as const,
@@ -870,33 +931,5 @@ const styles = StyleSheet.create({
     toastText: {
         color: colors.text,
         fontSize: fontSize.sm,
-    },
-    // Modal option styles
-    modalOption: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.sm,
-        borderRadius: borderRadius.md,
-        marginBottom: spacing.xs,
-    },
-    modalOptionSelected: {
-        backgroundColor: colors.surfaceElevated,
-    },
-    modalOptionDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        marginRight: spacing.md,
-    },
-    modalOptionText: {
-        fontSize: fontSize.md,
-        color: colors.text,
-        flex: 1,
-    },
-    modalCheckmark: {
-        fontSize: fontSize.md,
-        color: colors.primary,
-        fontWeight: "600" as const,
     },
 });

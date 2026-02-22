@@ -15,9 +15,23 @@ import { useQuery } from "@tanstack/react-query";
 import { tasksApi } from "../services/api";
 import { TaskItem } from "../components/tasks/TaskItem";
 import { BottomSheet } from "../components/BottomSheet";
+import { BottomSheetOption } from "../components/BottomSheetOption";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import { Task, TaskStatus, TaskOrEvent, TaskFilters, getTaskStatusValues, getSubTypeValues } from "../types";
+
+type SortKey = "taskName" | "status" | "subType" | "taskDueTime" | "updatedAt" | "createdAt" | "plannedFor";
+type SortDirection = "asc" | "desc";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: "createdAt", label: "Created" },
+    { value: "updatedAt", label: "Updated" },
+    { value: "taskName", label: "Name" },
+    { value: "status", label: "Status" },
+    { value: "subType", label: "Type" },
+    { value: "taskDueTime", label: "Due Date" },
+    { value: "plannedFor", label: "Planned" },
+];
 import type { TasksStackParamList } from "../navigation/types";
 
 const DEFAULT_FILTERS: TaskFilters = { isRecurring: false };
@@ -27,19 +41,46 @@ export function TasksScreen() {
     const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
     const [pendingFilters, setPendingFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
     const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+    const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [isSortModalVisible, setIsSortModalVisible] = useState(false);
 
     const { data, isLoading, error, refetch, isRefetching } = useQuery({
         queryKey: ["tasks", filters],
         queryFn: () => tasksApi.getTasks({ ...filters, taskOrEvent: TaskOrEvent.TASK }),
     });
 
-    // Sort tasks by createdAt descending (newest first)
+    // Sort tasks dynamically
     const sortedTasks = useMemo(() => {
         if (!data?.tasks) return [];
-        return [...data.tasks].sort((a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-    }, [data?.tasks]);
+        return [...data.tasks].sort((a, b) => {
+            let aVal: string | number | Date | undefined;
+            let bVal: string | number | Date | undefined;
+
+            switch (sortKey) {
+                case "taskName":
+                    aVal = a.taskName?.toLowerCase() ?? "";
+                    bVal = b.taskName?.toLowerCase() ?? "";
+                    break;
+                case "status":
+                case "subType":
+                case "plannedFor":
+                    aVal = a[sortKey] ?? "";
+                    bVal = b[sortKey] ?? "";
+                    break;
+                case "taskDueTime":
+                case "updatedAt":
+                case "createdAt":
+                    aVal = a[sortKey] ? new Date(a[sortKey]!).getTime() : 0;
+                    bVal = b[sortKey] ? new Date(b[sortKey]!).getTime() : 0;
+                    break;
+            }
+
+            if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+            if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+            return 0;
+        });
+    }, [data?.tasks, sortKey, sortDirection]);
 
     const { updateMutation } = useTaskMutations({});
 
@@ -92,6 +133,33 @@ export function TasksScreen() {
         setFilters(pendingFilters);
         setIsFilterModalVisible(false);
     }, [pendingFilters]);
+
+    const handleSortSelect = useCallback((key: SortKey) => {
+        if (key === sortKey) {
+            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDirection("desc");
+        }
+        setIsSortModalVisible(false);
+    }, [sortKey]);
+
+    const renderSortModal = () => (
+        <BottomSheet
+            visible={isSortModalVisible}
+            onClose={() => setIsSortModalVisible(false)}
+            title={`Sort by ${SORT_OPTIONS.find((o) => o.value === sortKey)?.label} (${sortDirection === "asc" ? "↑" : "↓"})`}
+        >
+            {SORT_OPTIONS.map((option) => (
+                <BottomSheetOption
+                    key={option.value}
+                    label={`${option.label} ${sortKey === option.value ? (sortDirection === "asc" ? "↑" : "↓") : ""}`}
+                    onPress={() => handleSortSelect(option.value)}
+                    selected={sortKey === option.value}
+                />
+            ))}
+        </BottomSheet>
+    );
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
@@ -171,6 +239,12 @@ export function TasksScreen() {
             <Text style={styles.title}>Tasks</Text>
             <View style={styles.headerRight}>
                 <Pressable
+                    style={({ pressed }) => [styles.sortButton, pressed && styles.sortButtonPressed]}
+                    onPress={() => setIsSortModalVisible(true)}
+                >
+                    <Text style={styles.sortButtonText}>Sort {sortDirection === "asc" ? "↑" : "↓"}</Text>
+                </Pressable>
+                <Pressable
                     style={({ pressed }) => [
                         styles.filterButton,
                         pressed && styles.filterButtonPressed,
@@ -249,6 +323,7 @@ export function TasksScreen() {
                 showsVerticalScrollIndicator={false}
             />
             {renderFilterModal()}
+            {renderSortModal()}
         </SafeAreaView>
     );
 }
@@ -275,6 +350,22 @@ const styles = StyleSheet.create({
         fontSize: fontSize.lg,
         fontWeight: "600" as const,
         color: colors.text,
+    },
+    sortButton: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.surface,
+        justifyContent: "center" as const,
+        alignItems: "center" as const,
+        marginRight: spacing.sm,
+    },
+    sortButtonPressed: {
+        backgroundColor: colors.surfaceElevated,
+    },
+    sortButtonText: {
+        fontSize: fontSize.xs,
+        color: colors.textSecondary,
     },
     filterButton: {
         paddingHorizontal: spacing.sm,

@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { tasksApi } from "../services/api";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import { BottomSheet } from "../components/BottomSheet";
+import { BottomSheetOption } from "../components/BottomSheetOption";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
 import { Task, TaskStatus, TaskOrEvent, PlannedFor, Source } from "../types";
 
@@ -98,32 +99,35 @@ export function WorkPlannerScreen() {
     );
 
     const handleMoveTo = useCallback(
-        async (plannedFor?: PlannedFor) => {
+        (plannedFor?: PlannedFor) => {
             if (!selectedTask) return;
 
-            if (selectedTask.isRecurring) {
-                await createMutation.mutateAsync({
-                    taskName: selectedTask.taskName,
+            // Close modal immediately for instant feedback
+            setShowMoveModal(false);
+            const taskToMove = selectedTask;
+            setSelectedTask(null);
+
+            // Trigger mutation (optimistic update happens in onMutate)
+            if (taskToMove.isRecurring) {
+                createMutation.mutate({
+                    taskName: taskToMove.taskName,
                     status: TaskStatus.OPEN,
-                    subType: selectedTask.subType,
+                    subType: taskToMove.subType,
                     taskOrEvent: TaskOrEvent.TASK,
                     plannedFor,
-                    userNotes: selectedTask.userNotes,
+                    userNotes: taskToMove.userNotes,
                     isRecurring: false,
                     source: Source.USER,
                 });
             } else {
-                await updateMutation.mutateAsync({
-                    taskId: selectedTask.taskId,
-                    taskOrEvent: selectedTask.taskOrEvent,
-                    status: selectedTask.status,
-                    subType: selectedTask.subType,
+                updateMutation.mutate({
+                    taskId: taskToMove.taskId,
+                    taskOrEvent: taskToMove.taskOrEvent,
+                    status: taskToMove.status,
+                    subType: taskToMove.subType,
                     plannedFor,
                 });
             }
-
-            setShowMoveModal(false);
-            setSelectedTask(null);
         },
         [selectedTask, updateMutation, createMutation],
     );
@@ -147,8 +151,19 @@ export function WorkPlannerScreen() {
                     <Text style={[styles.taskName, isCompleted && styles.taskNameCompleted]} numberOfLines={2}>
                         {task.taskName || "Untitled"}
                     </Text>
-                    {task.plannedFor && task.plannedFor.includes("Stretch") && (
-                        <Text style={styles.stretchLabel}>Stretch</Text>
+                    {((task.chats && task.chats.length > 0) || (task.plannedFor && task.plannedFor.includes("Stretch"))) && (
+                        <View style={styles.tagsRow}>
+                            {task.plannedFor && task.plannedFor.includes("Stretch") && (
+                                <View style={styles.stretchTag}>
+                                    <Text style={styles.stretchTagText}>Stretch</Text>
+                                </View>
+                            )}
+                            {task.chats?.map((chat, idx) => (
+                                <View key={idx} style={styles.chatTag}>
+                                    <Text style={styles.chatTagText}>{chat}</Text>
+                                </View>
+                            ))}
+                        </View>
                     )}
                 </Pressable>
 
@@ -202,28 +217,42 @@ export function WorkPlannerScreen() {
             onClose={() => setShowMoveModal(false)}
             title={selectedTask?.isRecurring ? "Create Task For" : "Move To"}
         >
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TODAY)}>
-                <Text style={styles.sheetOptionText}>Today</Text>
-            </Pressable>
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}>
-                <Text style={styles.sheetOptionText}>Today (Stretch)</Text>
-            </Pressable>
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TOMORROW)}>
-                <Text style={styles.sheetOptionText}>Tomorrow</Text>
-            </Pressable>
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}>
-                <Text style={styles.sheetOptionText}>Tomorrow (Stretch)</Text>
-            </Pressable>
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}>
-                <Text style={styles.sheetOptionText}>This Week</Text>
-            </Pressable>
-            <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}>
-                <Text style={styles.sheetOptionText}>This Week (Stretch)</Text>
-            </Pressable>
+            <BottomSheetOption
+                label="Today"
+                onPress={() => handleMoveTo(PlannedFor.TODAY)}
+                selected={selectedTask?.plannedFor === PlannedFor.TODAY}
+            />
+            <BottomSheetOption
+                label="Today (Stretch)"
+                onPress={() => handleMoveTo(PlannedFor.TODAY_STRETCH_GOAL)}
+                selected={selectedTask?.plannedFor === PlannedFor.TODAY_STRETCH_GOAL}
+            />
+            <BottomSheetOption
+                label="Tomorrow"
+                onPress={() => handleMoveTo(PlannedFor.TOMORROW)}
+                selected={selectedTask?.plannedFor === PlannedFor.TOMORROW}
+            />
+            <BottomSheetOption
+                label="Tomorrow (Stretch)"
+                onPress={() => handleMoveTo(PlannedFor.TOMORROW_STRETCH_GOAL)}
+                selected={selectedTask?.plannedFor === PlannedFor.TOMORROW_STRETCH_GOAL}
+            />
+            <BottomSheetOption
+                label="This Week"
+                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK)}
+                selected={selectedTask?.plannedFor === PlannedFor.THIS_WEEK}
+            />
+            <BottomSheetOption
+                label="This Week (Stretch)"
+                onPress={() => handleMoveTo(PlannedFor.THIS_WEEK_STRETCH_GOAL)}
+                selected={selectedTask?.plannedFor === PlannedFor.THIS_WEEK_STRETCH_GOAL}
+            />
             {!selectedTask?.isRecurring && (
-                <Pressable style={styles.sheetOption} onPress={() => handleMoveTo(undefined)}>
-                    <Text style={styles.sheetOptionText}>Unplanned</Text>
-                </Pressable>
+                <BottomSheetOption
+                    label="Unplanned"
+                    onPress={() => handleMoveTo(undefined)}
+                    selected={!selectedTask?.plannedFor}
+                />
             )}
         </BottomSheet>
     );
@@ -363,7 +392,7 @@ const styles = StyleSheet.create({
     },
     taskRow: {
         flexDirection: "row" as const,
-        alignItems: "center" as const,
+        alignItems: "flex-start" as const,
         paddingVertical: spacing.sm,
     },
     checkbox: {
@@ -389,22 +418,41 @@ const styles = StyleSheet.create({
     },
     taskContent: {
         flex: 1,
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
     },
     taskName: {
         fontSize: fontSize.md,
         color: colors.text,
-        flex: 1,
     },
     taskNameCompleted: {
         textDecorationLine: "line-through" as const,
         color: colors.textMuted,
     },
-    stretchLabel: {
+    tagsRow: {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        marginTop: spacing.xs,
+    },
+    stretchTag: {
+        backgroundColor: colors.primary + "20",
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+        marginRight: spacing.xs,
+    },
+    stretchTagText: {
         fontSize: fontSize.xs,
         color: colors.primary,
-        marginLeft: spacing.sm,
+    },
+    chatTag: {
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+        marginRight: spacing.xs,
+    },
+    chatTagText: {
+        fontSize: fontSize.xs,
+        color: colors.textSecondary,
     },
     moveButton: {
         width: 32,
@@ -427,14 +475,5 @@ const styles = StyleSheet.create({
     },
     bottomPadding: {
         height: spacing.xxl,
-    },
-    sheetOption: {
-        paddingVertical: spacing.md,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
-    },
-    sheetOptionText: {
-        fontSize: fontSize.md,
-        color: colors.text,
     },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     View,
     Text,
@@ -9,7 +9,9 @@ import {
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
+    Keyboard,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,6 +29,7 @@ import {
     getTaskStatusValues,
     getSubTypeValues,
     getPlannedForValues,
+    getSourceValues,
 } from "../types";
 
 type TaskFormRouteParams = {
@@ -51,6 +54,10 @@ export function TaskFormScreen() {
     const [plannedFor, setPlannedFor] = useState<PlannedFor | undefined>(defaultPlannedFor);
     const [isRecurring, setIsRecurring] = useState(defaultIsRecurring ?? false);
     const [userNotes, setUserNotes] = useState("");
+    const [source, setSource] = useState<Source>(Source.USER);
+    const [taskDueTime, setTaskDueTime] = useState<Date | undefined>(undefined);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
 
     const { createMutation, updateMutation } = useTaskMutations({
         onCreateSuccess: () => navigation.goBack(),
@@ -65,6 +72,8 @@ export function TaskFormScreen() {
             setPlannedFor(task.plannedFor);
             setIsRecurring(task.isRecurring ?? false);
             setUserNotes(task.userNotes || "");
+            setSource(task.source ?? Source.USER);
+            setTaskDueTime(task.taskDueTime ? new Date(task.taskDueTime) : undefined);
         }
     }, [task]);
 
@@ -78,6 +87,8 @@ export function TaskFormScreen() {
                 taskOrEvent: TaskOrEvent.TASK,
                 plannedFor,
                 userNotes: userNotes || undefined,
+                source,
+                taskDueTime,
             };
             updateMutation.mutate(updateData);
         } else {
@@ -89,11 +100,18 @@ export function TaskFormScreen() {
                 plannedFor,
                 userNotes: userNotes || undefined,
                 isRecurring,
-                source: Source.USER,
+                source,
+                taskDueTime,
             };
             createMutation.mutate(createData);
         }
-    }, [task, isEditing, taskName, status, subType, plannedFor, isRecurring, userNotes, createMutation, updateMutation]);
+    }, [task, isEditing, taskName, status, subType, plannedFor, isRecurring, userNotes, source, taskDueTime, createMutation, updateMutation]);
+
+
+    const formatDueDate = (date?: Date) => {
+        if (!date) return "Not set";
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    };
 
     const renderOptionGroup = (
         label: string,
@@ -108,7 +126,7 @@ export function TaskFormScreen() {
                 {allowNone && (
                     <Pressable
                         style={[styles.option, !selectedValue && styles.optionActive]}
-                        onPress={() => onSelect(undefined)}
+                        onPress={() => { Keyboard.dismiss(); onSelect(undefined); }}
                     >
                         <Text style={[styles.optionText, !selectedValue && styles.optionTextActive]}>None</Text>
                     </Pressable>
@@ -117,7 +135,7 @@ export function TaskFormScreen() {
                     <Pressable
                         key={opt}
                         style={[styles.option, selectedValue === opt && styles.optionActive]}
-                        onPress={() => onSelect(opt)}
+                        onPress={() => { Keyboard.dismiss(); onSelect(opt); }}
                     >
                         <Text style={[styles.optionText, selectedValue === opt && styles.optionTextActive]}>{opt}</Text>
                     </Pressable>
@@ -142,7 +160,12 @@ export function TaskFormScreen() {
                     </Pressable>
                 </View>
 
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    ref={scrollViewRef}
+                    style={styles.content}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                     <View style={styles.fieldGroup}>
                         <Text style={styles.fieldLabel}>Task Name</Text>
                         <TextInput
@@ -155,22 +178,6 @@ export function TaskFormScreen() {
                             multiline
                             textAlignVertical="top"
                         />
-                    </View>
-
-                    {renderOptionGroup("Status", getTaskStatusValues(), status, (v) => setStatus(v as TaskStatus))}
-                    {renderOptionGroup("Type", getSubTypeValues(), subType, (v) => setSubType(v as SubType))}
-                    {renderOptionGroup("Planned For", getPlannedForValues(), plannedFor, (v) => setPlannedFor(v as PlannedFor | undefined), true)}
-
-                    <View style={styles.fieldGroup}>
-                        <Pressable
-                            style={styles.toggleRow}
-                            onPress={() => setIsRecurring(!isRecurring)}
-                        >
-                            <Text style={styles.fieldLabel}>Recurring Task</Text>
-                            <View style={[styles.toggle, isRecurring && styles.toggleActive]}>
-                                <View style={[styles.toggleKnob, isRecurring && styles.toggleKnobActive]} />
-                            </View>
-                        </Pressable>
                     </View>
 
                     <View style={styles.fieldGroup}>
@@ -186,6 +193,62 @@ export function TaskFormScreen() {
                             textAlignVertical="top"
                         />
                     </View>
+
+                    {renderOptionGroup("Status", getTaskStatusValues(), status, (v) => setStatus(v as TaskStatus))}
+                    {renderOptionGroup("Type", getSubTypeValues(), subType, (v) => setSubType(v as SubType))}
+                    {renderOptionGroup("Source", getSourceValues(), source, (v) => setSource((v as Source) ?? Source.USER))}
+                    {renderOptionGroup("Planned For", getPlannedForValues(), plannedFor, (v) => setPlannedFor(v as PlannedFor | undefined), true)}
+
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>Due Date</Text>
+                        <View style={styles.dateRow}>
+                            <Pressable
+                                style={styles.dateButton}
+                                onPress={() => setShowDatePicker(true)}
+                            >
+                                <Text style={styles.dateButtonText}>{formatDueDate(taskDueTime)}</Text>
+                            </Pressable>
+                            {taskDueTime && (
+                                <Pressable
+                                    style={styles.clearDateButton}
+                                    onPress={() => setTaskDueTime(undefined)}
+                                >
+                                    <Text style={styles.clearDateText}>Clear</Text>
+                                </Pressable>
+                            )}
+                        </View>
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={taskDueTime ?? new Date()}
+                                mode="date"
+                                display="spinner"
+                                onChange={(_, date) => {
+                                    setShowDatePicker(Platform.OS === "ios");
+                                    if (date) setTaskDueTime(date);
+                                }}
+                                themeVariant="dark"
+                            />
+                        )}
+                        {Platform.OS === "ios" && showDatePicker && (
+                            <Pressable style={styles.datePickerDone} onPress={() => setShowDatePicker(false)}>
+                                <Text style={styles.datePickerDoneText}>Done</Text>
+                            </Pressable>
+                        )}
+                    </View>
+
+                    <View style={styles.fieldGroup}>
+                        <Pressable
+                            style={styles.toggleRow}
+                            onPress={() => setIsRecurring(!isRecurring)}
+                        >
+                            <Text style={styles.fieldLabel}>Recurring Task</Text>
+                            <View style={[styles.toggle, isRecurring && styles.toggleActive]}>
+                                <View style={[styles.toggleKnob, isRecurring && styles.toggleKnobActive]} />
+                            </View>
+                        </Pressable>
+                    </View>
+
+                    <View style={styles.bottomPadding} />
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -304,5 +367,42 @@ const styles = StyleSheet.create({
     toggleKnobActive: {
         backgroundColor: colors.text,
         alignSelf: "flex-end" as const,
+    },
+    dateRow: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+    },
+    dateButton: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    dateButtonText: {
+        fontSize: fontSize.md,
+        color: colors.text,
+    },
+    clearDateButton: {
+        marginLeft: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+    },
+    clearDateText: {
+        fontSize: fontSize.sm,
+        color: colors.error,
+    },
+    datePickerDone: {
+        alignSelf: "flex-end" as const,
+        marginTop: spacing.sm,
+    },
+    datePickerDoneText: {
+        fontSize: fontSize.md,
+        color: colors.primary,
+        fontWeight: "600" as const,
+    },
+    bottomPadding: {
+        height: 100,
     },
 });

@@ -94,8 +94,16 @@ export function TaskItem({ task, onPress, onToggleStatus }: TaskItemProps) {
                         </View>
 
                         {task.source && (
-                            <Text style={styles.source}>{task.source}</Text>
+                            <View style={styles.sourceTag}>
+                                <Text style={styles.sourceTagText}>{task.source}</Text>
+                            </View>
                         )}
+
+                        {task.chats?.map((chat, idx) => (
+                            <View key={idx} style={styles.chatTag}>
+                                <Text style={styles.chatTagText}>{chat}</Text>
+                            </View>
+                        ))}
 
                         {task.taskDueTime && (
                             <Text style={styles.dueDate}>
@@ -161,10 +169,27 @@ const styles = StyleSheet.create({
         fontSize: fontSize.xs,
         fontWeight: "500" as const,
     },
-    source: {
-        fontSize: fontSize.xs,
-        color: colors.textMuted,
+    sourceTag: {
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
         marginRight: spacing.sm,
+    },
+    sourceTagText: {
+        fontSize: fontSize.xs,
+        color: colors.textSecondary,
+    },
+    chatTag: {
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+        marginRight: spacing.sm,
+    },
+    chatTagText: {
+        fontSize: fontSize.xs,
+        color: colors.textSecondary,
     },
     dueDate: {
         fontSize: fontSize.xs,
@@ -174,6 +199,7 @@ const styles = StyleSheet.create({
     plannedFor: {
         fontSize: fontSize.xs,
         color: colors.textMuted,
+        marginRight: spacing.sm,
     },
     chevron: {
         fontSize: fontSize.xl,

@@ -1,11 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
 import { tasksApi } from "../services/api";
 import { colors, spacing, fontSize, borderRadius } from "../theme";
-import { Task, TaskStatus, TaskOrEvent } from "../types";
+import { Task, TaskStatus, TaskOrEvent, TaskChangelog } from "../types";
 import { useTaskMutations } from "../hooks/useTaskMutations";
 import type { TasksStackParamList } from "../navigation/types";
 
@@ -29,6 +29,12 @@ export function TaskDetailScreen() {
 
     // Get the latest task from cache, falling back to route params
     const task = data?.tasks?.find((t) => t.taskId === routeTask.taskId) ?? routeTask;
+
+    // Fetch changelogs for this task
+    const { data: changelogData, isLoading: changelogLoading } = useQuery({
+        queryKey: ["changelogs", routeTask.taskId],
+        queryFn: () => tasksApi.getTaskChangelogs({ taskId: routeTask.taskId }),
+    });
 
     const { updateMutation } = useTaskMutations({
         onUpdateSuccess: () => navigation.goBack(),
@@ -79,6 +85,25 @@ export function TaskDetailScreen() {
     const handleEdit = () => {
         navigation.navigate("TaskForm", { task });
     };
+
+    const formatChangelogTime = (date: Date) => {
+        return new Date(date).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const renderChangelog = (log: TaskChangelog) => (
+        <View key={log.changelogId} style={styles.changelogItem}>
+            <Text style={styles.changelogTime}>{formatChangelogTime(log.timestamp)}</Text>
+            <Text style={styles.changelogField}>{log.fieldName}</Text>
+            <Text style={styles.changelogValues}>
+                {log.oldValue ?? "(empty)"} → {log.newValue ?? "(empty)"}
+            </Text>
+        </View>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -203,6 +228,18 @@ export function TaskDetailScreen() {
                         )}
                     </View>
                 )}
+
+                {/* Changelog */}
+                <View style={styles.changelogSection}>
+                    <Text style={styles.changelogTitle}>History</Text>
+                    {changelogLoading ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                    ) : changelogData?.changelogs && changelogData.changelogs.length > 0 ? (
+                        changelogData.changelogs.slice(0, 10).map(renderChangelog)
+                    ) : (
+                        <Text style={styles.noChangelog}>No history</Text>
+                    )}
+                </View>
 
                 {/* Action Button */}
                 <Pressable
@@ -353,5 +390,42 @@ const styles = StyleSheet.create({
     },
     bottomPadding: {
         height: spacing.xl,
+    },
+    changelogSection: {
+        marginTop: spacing.lg,
+        paddingTop: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        marginBottom: spacing.lg,
+    },
+    changelogTitle: {
+        fontSize: fontSize.md,
+        fontWeight: "600" as const,
+        color: colors.text,
+        marginBottom: spacing.sm,
+    },
+    changelogItem: {
+        paddingVertical: spacing.sm,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+    },
+    changelogTime: {
+        fontSize: fontSize.xs,
+        color: colors.textMuted,
+        marginBottom: 2,
+    },
+    changelogField: {
+        fontSize: fontSize.sm,
+        color: colors.textSecondary,
+        fontWeight: "500" as const,
+    },
+    changelogValues: {
+        fontSize: fontSize.sm,
+        color: colors.text,
+    },
+    noChangelog: {
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
+        fontStyle: "italic" as const,
     },
 });

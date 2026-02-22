@@ -151,3 +151,4 @@ export interface TaskChangelogsResponse {
 export const getTaskStatusValues = () => Object.values(TaskStatus);
 export const getSubTypeValues = () => Object.values(SubType);
 export const getPlannedForValues = () => Object.values(PlannedFor);
+export const getSourceValues = () => [Source.USER, Source.AGENT]; // Only user-selectable sources

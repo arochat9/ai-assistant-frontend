@@ -1,37 +1,40 @@
 {
-    "expo": {
-        "name": "AI Assistant",
-        "slug": "ai-assistant",
-        "version": "3.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/checklist.png",
-        "userInterfaceStyle": "dark",
-        "newArchEnabled": true,
-        "splash": {
-            "image": "./assets/splash-icon.png",
-            "resizeMode": "contain",
-            "backgroundColor": "#0f172a"
-        },
-        "ios": {
-            "supportsTablet": true,
-            "bundleIdentifier": "com.anonymous.mobileapp",
-            "buildNumber": "3",
-            "infoPlist": {
-                "NSMicrophoneUsageDescription": "This app uses the microphone for voice input to the AI assistant.",
-                "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."
-            }
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#0f172a"
-            },
-            "edgeToEdgeEnabled": true,
-            "predictiveBackGestureEnabled": false,
-            "package": "com.anonymous.mobileapp"
-        },
-        "web": {
-            "favicon": "./assets/favicon.png"
-        }
-    }
+  "expo": {
+    "name": "AI Assistant",
+    "slug": "ai-assistant",
+    "version": "3.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/checklist.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.mobileapp",
+      "buildNumber": "3",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses the microphone for voice input to the AI assistant.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.mobileapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
+  }
 }
