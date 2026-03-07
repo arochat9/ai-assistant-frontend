@@ -1,17 +1,40 @@
 import { Request, Response } from "express";
-import { Task, Message } from "@ai-assistant-third-party-app/sdk";
+import { Message as OsdkMessage } from "@ai-assistant-third-party-app/sdk";
 import { Osdk } from "@osdk/client";
 import { client } from "../config/foundry";
-import { TaskChangelogFilters, TaskChangelogsResponse } from "shared";
-import type { TaskChangelog as TaskChangelogType } from "shared";
+import { MessageFilters, MessagesResponse, Message } from "shared";
 
+/**
+ * POST endpoint that fetches messages by IDs
+ * Body: MessageFilters
+ */
 export async function getMessages(req: Request, res: Response) {
-    const messages: Osdk.Instance<Message>[] = [];
-    for await (const item of client(Message)
-        .where({
-            messageId: { $in: ["msg1", "msg2", "msg3"] },
-        })
-        .asyncIter()) {
-        messages.push(item);
+    try {
+        const { messageIds }: MessageFilters = req.body;
+
+        if (!messageIds?.length) {
+            return res.status(400).json({ error: "messageIds array is required" });
+        }
+
+        const osdkMessages: Osdk.Instance<OsdkMessage>[] = [];
+        for await (const item of client(OsdkMessage)
+            .where({ messageId: { $in: messageIds } })
+            .asyncIter()) {
+            osdkMessages.push(item);
+        }
+
+        const messages: Message[] = osdkMessages.map((msg) => ({
+            messageId: msg.messageId,
+            content: msg.textContent ?? "",
+            senderName: msg.senderName ?? msg.userId ?? "Unknown",
+            repliedToId: msg.repliedToFk,
+        }));
+
+        const response: MessagesResponse = { messages };
+        return res.json(response);
+    } catch (error) {
+        console.error("Error fetching messages:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch messages";
+        return res.status(500).json({ error: "Failed to fetch messages", details: errorMessage });
     }
 }

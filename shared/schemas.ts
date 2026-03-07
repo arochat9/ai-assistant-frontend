@@ -136,3 +136,25 @@ export const TaskChangelogsResponseSchema = z.object({
 });
 
 export type TaskChangelogsResponse = z.infer<typeof TaskChangelogsResponseSchema>;
+
+// Message Interface
+export interface Message {
+    messageId: string;
+    content: string;
+    senderName: string;
+    repliedToId: string | undefined;
+}
+
+// Message Filters Schema
+export const MessageFiltersSchema = z.object({
+    messageIds: z.array(z.string()),
+});
+
+export type MessageFilters = z.infer<typeof MessageFiltersSchema>;
+
+// Message Response Schema
+export const MessagesResponseSchema = z.object({
+    messages: z.array(z.custom<Message>()),
+});
+
+export type MessagesResponse = z.infer<typeof MessagesResponseSchema>;

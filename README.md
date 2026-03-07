@@ -1,76 +1,136 @@
-# AI Assistant Frontend
+# AI Assistant Frontend - Copilot Instructions
 
-Monorepo for AI Assistant web application deployed to Fly.io.
+## Architecture Overview
 
-## Architecture
-
-**Single-app deployment:** Express backend serves the built React frontend as static files.
+**Monorepo with 3 packages**: Builds as single-app deployment to Fly.io via Docker.
 
 ```
-├── middleware/          # Express backend (Node.js + TypeScript)
-├── web-frontend/        # React + Vite frontend (TypeScript)
-└── shared/              # Shared types/schemas (ESM modules)
+middleware/      → Express backend + serves built React frontend (port 3000)
+web-frontend/    → React + Vite + TypeScript + Tailwind + shadcn/ui
+shared/          → Shared TypeScript types/schemas (ESM modules)
 ```
 
-### How it works
-1. Frontend builds to static files (`web-frontend/dist/`)
-2. Express serves those files + handles `/api/*` routes
-3. Same server = no CORS issues, single deployment
+**Key pattern**: Express serves static frontend files AND handles `/api/*` routes → no CORS needed.
 
-## Deployment
+## Critical Build & Deploy Knowledge
 
-### Automatic via GitHub Actions
-Push to `master` → GitHub Actions builds & deploys to Fly.io automatically.
+### Local Development Commands
 
-**Required GitHub Secrets:**
-- `FOUNDRY_TOKEN` - NPM registry authentication (build-time)
-- `FLY_API_TOKEN` - Fly.io deployment (`fly auth token`)
+- **Backend**: `cd middleware && npm run dev` (nodemon + ts-node on port 3000)
+- **Frontend**: `cd web-frontend && npm run dev` (Vite dev server on port 5173)
+- **Shared package changes**: `cd shared && npm run watch` (auto-rebuild on save)
 
-### Build Process (Docker)
+### Docker Build Order (middleware/Dockerfile)
+
 1. Build `shared/` package (ESM modules)
-2. Install & build `web-frontend/` (Vite → static files)
+2. Install & build `web-frontend/` (Vite → static files in `dist/`)
 3. Install & build `middleware/` (TypeScript → Node.js)
-4. Express serves frontend + API routes on port 3000
+4. Express serves both frontend + API routes
 
-**Key files:**
-- `middleware/Dockerfile` - Multi-stage build
-- `middleware/fly.toml` - Fly.io config
-- `.github/workflows/deploy.yml` - Auto-deploy on push
+**Build-time secret**: `FOUNDRY_TOKEN` injected via `--build-secret` for NPM registry auth (Palantir Foundry SDK).
 
-## Local Development
+### Environment Variables
 
-### Run backend
-```bash
-cd middleware
-npm run dev  # Runs on http://localhost:3000
+- **Backend** (`middleware/.env`): `CLIENT_ID`, `CLIENT_SECRET`, `PORT` (optional)
+- **Frontend** (`web-frontend/.env`): `VITE_API_URL=http://localhost:3000` (dev only; production uses relative URLs)
+
+## Foundry Integration Patterns
+
+**Backend uses Palantir Foundry OSDK** to manage tasks in Foundry ontology.
+
+### Data Flow
+
+1. Frontend calls API → `middleware/src/controllers/tasks.controller.ts`
+2. Controller validates with Zod schemas from `shared/schemas.ts`
+3. Calls Foundry OSDK client (`middleware/src/config/foundry.ts`)
+4. Converts OSDK Task → custom Task interface via `taskConverter.ts` (strips `runId` and `environment`)
+5. Returns to frontend
+
+### Key Conversion Pattern
+
+**Always filters to `environment = "prod"`** in [taskQueries.ts](middleware/src/utils/taskQueries.ts#L13):
+
+```typescript
+const conditions = [{ environment: { $eq: Environment.PRODUCTION } }];
 ```
 
-### Run frontend
-```bash
-cd web-frontend
-npm run dev  # Runs on http://localhost:5173
+### Date Handling
+
+- **API Request**: Parse ISO strings → Date objects in [requestParser.ts](middleware/src/utils/requestParser.ts)
+- **API Response**: Dates automatically converted in frontend [api.ts](web-frontend/src/services/api.ts) axios interceptor
+- **Foundry API**: Convert Date objects → ISO strings before sending to OSDK
+
+## Frontend State Management
+
+### React Query Pattern
+
+- **All server state**: TanStack Query (`@tanstack/react-query`)
+- **Query keys**: `["tasks", filters]` - updates when filters change
+- **Mutations**: [useTaskMutations.ts](web-frontend/src/hooks/useTaskMutations.ts) with optimistic updates
+
+**Optimistic update strategy**:
+
+- On create/update: immediately update ALL cached task queries (not just current filter)
+- On success: replace temp IDs with server response
+- On error: rollback all queries using snapshot
+
+### Context Providers (App.tsx order matters)
+
+```tsx
+<TaskDrawerProvider>
+    {" "}
+    // Manages slide-out task detail drawer
+    <TaskDialogProvider>
+        {" "}
+        // Manages create/edit dialogs
+        <Layout>...</Layout>
+    </TaskDialogProvider>
+</TaskDrawerProvider>
 ```
 
-**Environment:**
-- `web-frontend/.env` contains `VITE_API_URL=http://localhost:3000`
-- In production, API calls use relative URLs (same server)
+## Shared Package (ESM Modules)
 
-### Shared package
-Any changes to `shared/` require rebuilding:
-```bash
-cd shared
-npm run build
+**CRITICAL**: `shared/` outputs ESM → **must use `.js` extensions in imports**:
+
+```typescript
+import { TaskStatus } from "./enums.js"; // ✅ Required
+import { TaskStatus } from "./enums"; // ❌ Breaks
 ```
 
-Or run in watch mode (auto-rebuilds on changes):
-```bash
-cd shared
-npm run watch
+**Re-export pattern** in [shared/index.ts](shared/index.ts) for clean imports:
+
+```typescript
+export * from "./enums.js";
+export * from "./schemas.js";
 ```
 
-## Important Notes
+**Package contents**: Zod schemas, TypeScript interfaces, and enums for Task domain objects. Import from `"shared"` in both middleware and web-frontend (already linked via `package.json`).
 
-- **ESM modules:** `shared/` outputs ESM (requires `.js` extensions in imports)
-- **Build-time secrets:** `FOUNDRY_TOKEN` is injected during Docker build via `--build-secret`
-- **Runtime secrets:** Set in Fly.io dashboard (not in GitHub)
-- **Port binding:** Express listens on `0.0.0.0:3000` (required by Fly.io)
+## UI Component Patterns
+
+### shadcn/ui Components
+
+Located in `web-frontend/src/components/ui/` - DO NOT edit directly (regenerate from CLI if needed).
+
+### Custom Data Table
+
+[DataTable.tsx](web-frontend/src/components/ui/data-table/DataTable.tsx) is a generic table component with:
+
+- Column sorting (controlled or uncontrolled)
+- Inline editing (startEdit/cancelEdit pattern)
+- Row grouping with drag-and-drop
+- Optional drawer/actions columns
+
+**Usage**: Pass `columns` array with `key`, `label`, `sortable`, `render`, and optional `editable`.
+
+# FROM USER
+
+everything should be maintainable and easy to manage. this is a solo project, so it should be simple. Don't use bad practices. Things should be scalable and readable NOT verbose. CONCISE. No anti patterns. Follow KISS & DRY. If things should be modularized then do it. You don't and shouldn't try to stick a million things in 1 file.
+
+For example, don't type things as "any" that is bad practice.
+
+Don't finish your agent loop until you have checked for errors and confirmed there are none from the code changes you have made.
+
+Also, don't make example files
+
+Use this to figure out OSDK object set syntax and capabilities https://www.palantir.com/docs/foundry/ontology-sdk/typescript-osdk/

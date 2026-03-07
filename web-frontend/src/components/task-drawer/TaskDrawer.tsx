@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { useTaskDrawer } from "../../contexts/TaskDrawerContext";
 import { useTaskDialog } from "../../contexts/TaskDialogContext";
 import { TaskHistory } from "./TaskHistory";
+import { TaskMessages } from "./TaskMessages";
 
 export function TaskDrawer() {
     const { isOpen, task, closeDrawer } = useTaskDrawer();
@@ -179,19 +180,13 @@ export function TaskDrawer() {
                         </div>
                     </div>
 
-                    {/* Source Message IDs */}
+                    {/* Source Messages */}
                     {task.sourceMessageIds && task.sourceMessageIds.length > 0 && (
-                        <div>
-                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Source Messages</h4>
-                            <div className="space-y-1">
-                                {task.sourceMessageIds.map((id, index) => (
-                                    <div key={index} className="text-xs font-mono bg-muted p-2 rounded">
-                                        {id}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <TaskMessages sourceMessageIds={task.sourceMessageIds} />
                     )}
+
+                    {/* Change History */}
+                    <TaskHistory taskId={task.taskId} />
 
                     {/* Task ID */}
                     <div>
@@ -204,9 +199,6 @@ export function TaskDrawer() {
                             </div>
                         )}
                     </div>
-
-                    {/* Change History */}
-                    <TaskHistory taskId={task.taskId} />
                 </div>
             </SheetContent>
         </Sheet>

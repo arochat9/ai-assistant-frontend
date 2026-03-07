@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import tasksRoutes from "./routes/tasks.routes";
 import agentRoutes from "./routes/agent.routes";
+import messagesRoutes from "./routes/messages.routes";
 import { setupRealtimeWebSocket } from "./utils/realtimeWebSocket";
 
 dotenv.config();
@@ -26,6 +27,7 @@ app.get("/health", (req, res) => {
 // API Routes (must come before static file serving)
 app.use("/api/tasks", tasksRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/messages", messagesRoutes);
 
 // Serve static files from the Vite build
 app.use(express.static(path.join(__dirname, "../../web-frontend/dist")));

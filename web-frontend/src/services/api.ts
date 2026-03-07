@@ -8,6 +8,8 @@ import type {
     TaskActionResponse,
     TaskChangelogFilters,
     TaskChangelogsResponse,
+    MessageFilters,
+    MessagesResponse,
 } from "shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -85,6 +87,13 @@ export const tasksApi = {
     // Get task changelogs (history)
     getTaskChangelogs: async (filters?: TaskChangelogFilters): Promise<TaskChangelogsResponse> => {
         const response = await api.post<TaskChangelogsResponse>("/api/tasks/changelogs", filters || {});
+        return response.data;
+    },
+};
+
+export const messagesApi = {
+    getMessages: async (filters: MessageFilters): Promise<MessagesResponse> => {
+        const response = await api.post<MessagesResponse>("/api/messages", filters);
         return response.data;
     },
 };
