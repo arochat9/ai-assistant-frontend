@@ -5,6 +5,7 @@ import { TasksPage } from "./pages/TasksPage.tsx";
 import { WorkPlannerPage } from "./pages/WorkPlannerPage.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { TasksChangelogPage } from "./pages/TasksChangelogPage.tsx";
+import { MessagesPage } from "./pages/MessagesPage.tsx";
 import { Toaster } from "./components/ui/sonner";
 import { TaskDrawerProvider } from "./contexts/TaskDrawerContext";
 import { TaskDialogProvider } from "./contexts/TaskDialogContext";
@@ -22,6 +23,7 @@ function App() {
                         <Route path="/tasks" element={<TasksPage />} />
                         <Route path="/work-planner" element={<WorkPlannerPage />} />
                         <Route path="/calendar" element={<CalendarPage />} />
+                        <Route path="/messages" element={<MessagesPage />} />
                         <Route path="/changelog" element={<TasksChangelogPage />} />
                     </Routes>
                 </Layout>

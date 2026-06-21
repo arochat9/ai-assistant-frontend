@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { MessageSquare, ListTodo, Calendar, History, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, ListTodo, Calendar, History, ClipboardList, ChevronLeft, ChevronRight, MessagesSquare } from "lucide-react";
 
 const navItems = [
     {
         title: "Agent",
         href: "/agent",
         icon: MessageSquare,
+    },
+    {
+        title: "Messages",
+        href: "/messages",
+        icon: MessagesSquare,
     },
     {
         title: "Tasks",

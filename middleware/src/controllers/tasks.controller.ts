@@ -20,7 +20,7 @@ import { createTask, updateTask } from "../utils/taskMutations";
 export async function getTasks(req: Request, res: Response) {
     try {
         const filters: TaskFilters = req.body;
-
+        console.log("get tasks");
         // Use shared utility function to fetch tasks
         const tasks = await fetchTasks(filters);
 

@@ -1,13 +1,12 @@
-import { Task as OsdkTask, Message, User, Chat } from "@ai-assistant-third-party-app/sdk";
+import { Task as OsdkTask } from "@ai-assistant-third-party-app/sdk";
 import { client } from "../config/foundry";
 import { Environment, TaskFilters } from "shared";
 import { convertOsdkTaskToTask } from "./taskConverter";
 import type { Task } from "shared";
-import { Osdk } from "@osdk/api";
 
 /**
  * Shared utility to fetch tasks from Foundry with filters
- * Used by both the tasks controller and agent controller
+ * Uses withProperties to derive chat display names per task
  */
 export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     const whereConditions: Array<Record<string, unknown>> = [{ environment: { $eq: Environment.PRODUCTION } }];
@@ -27,6 +26,9 @@ export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
     }
     if (filters.subType) {
         whereConditions.push({ subType: { $eq: filters.subType } });
+    }
+    if (filters.chatId) {
+        whereConditions.push({ chatIds: { $contains: filters.chatId } });
     }
     if (filters.keyword) {
         whereConditions.push({
@@ -52,63 +54,55 @@ export async function fetchTasks(filters: TaskFilters): Promise<Task[]> {
         whereConditions.push({ eventEndTime: { $lte: filters.eventEndBefore } });
     }
 
-    const tasksQuery = client(OsdkTask).where({ $and: whereConditions });
-    const linkedChatsQuery = tasksQuery.pivotTo("chat");
-    const linkedUsersQuery = linkedChatsQuery.pivotTo("users");
+    const tasksWithChats = client(OsdkTask)
+        .where({ $and: whereConditions })
+        .withProperties({
+            chatNames: (base) =>
+                base.pivotTo("chat").aggregate("chatDisplayName:collectList"),
+            chatMemberNames: (base) =>
+                base.pivotTo("chat").pivotTo("users").aggregate("name:collectList"),
+        });
 
-    // opens before closed, and then newest to oldest
-    const tasksPromise = tasksQuery.fetchPage({
+    const tasksPage = await tasksWithChats.fetchPage({
         $pageSize: 100,
         $orderBy: { status: "desc", updatedAt: "desc" },
     });
 
-    const [tasksPage, linkedChatsPage, linkedUsersPage] = await Promise.all([
-        tasksPromise,
-        linkedChatsQuery.fetchPage({ $pageSize: 100 }),
-        linkedUsersQuery.fetchPage({ $pageSize: 100 }),
-    ]);
-
-    const chatMap = createChatMap(linkedChatsPage.data ?? [], linkedUsersPage.data ?? []);
-
-    return taskConverterWrapper(tasksPage.data ?? [], chatMap);
+    return (tasksPage.data ?? []).map((task: any) => {
+        const chatNames: string[] = (task.chatNames ?? []).filter(Boolean);
+        const memberNames: string[] = (task.chatMemberNames ?? []).filter(Boolean);
+        // Use chat display names if available, fall back to member names
+        const chats = chatNames.length > 0
+            ? chatNames
+            : memberNames.length > 0
+                ? [memberNames.filter((n: string) => n !== "Andrew Rochat").join(", ")]
+                : undefined;
+        return convertOsdkTaskToTask(task, chats);
+    });
 }
 
 export async function fetchTaskById(taskId: string): Promise<Task> {
-    const [osdkTask, linkedChatsPage, linkedUsersPage] = await Promise.all([
-        client(OsdkTask).fetchOne(taskId),
-        client(OsdkTask).pivotTo("chat").fetchPage({ $pageSize: 100 }),
-        client(OsdkTask).pivotTo("chat").pivotTo("users").fetchPage({ $pageSize: 100 }),
-    ]);
-    if (!osdkTask) {
+    const taskWithChats = client(OsdkTask)
+        .where({ taskId: { $eq: taskId } })
+        .withProperties({
+            chatNames: (base) =>
+                base.pivotTo("chat").aggregate("chatDisplayName:collectList"),
+            chatMemberNames: (base) =>
+                base.pivotTo("chat").pivotTo("users").aggregate("name:collectList"),
+        });
+
+    const page = await taskWithChats.fetchPage({ $pageSize: 1 });
+    const task = (page.data ?? [])[0] as any;
+    if (!task) {
         throw new Error(`Task with ID ${taskId} not found`);
     }
 
-    const chatMap = createChatMap(linkedChatsPage.data ?? [], linkedUsersPage.data ?? []);
-
-    return taskConverterWrapper([osdkTask], chatMap)[0];
-}
-
-function createChatMap(chats: Osdk.Instance<Chat>[], users: Osdk.Instance<User>[]): Map<string, string> {
-    const userMap = new Map<string, string | undefined>(users.map((user) => [user.userId, user.name]));
-
-    const chatMap = new Map<string, string>();
-    chats.forEach((chat) => {
-        const chatName = chat.chatDisplayName;
-        if (chatName) {
-            chatMap.set(chat.chatId, chatName);
-        } else {
-            const participantNames = (chat.userIds ?? [])
-                .filter((userId) => userId !== "+19144177189")
-                .map((userId) => userMap.get(userId) ?? userId);
-            chatMap.set(chat.chatId, participantNames.join(", "));
-        }
-    });
-    return chatMap;
-}
-
-function taskConverterWrapper(osdkTasks: Osdk.Instance<OsdkTask>[], chatMap: Map<string, string>): Task[] {
-    return osdkTasks.map((task) => {
-        const chats = task.chatIds?.map((chatId) => chatMap.get(chatId) ?? "Chat not found");
-        return convertOsdkTaskToTask(task, chats);
-    });
+    const chatNames: string[] = (task.chatNames ?? []).filter(Boolean);
+    const memberNames: string[] = (task.chatMemberNames ?? []).filter(Boolean);
+    const chats = chatNames.length > 0
+        ? chatNames
+        : memberNames.length > 0
+            ? [memberNames.filter((n: string) => n !== "Andrew Rochat").join(", ")]
+            : undefined;
+    return convertOsdkTaskToTask(task, chats);
 }

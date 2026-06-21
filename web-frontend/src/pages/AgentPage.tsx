@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
+import { useSearchParams } from "react-router-dom";
 import { AgentHeader } from "../components/agent/AgentHeader";
 import { AgentMessages } from "../components/agent/AgentMessages";
 import { TextInput } from "../components/agent/TextInput";
@@ -10,10 +11,20 @@ type Mode = "text" | "voice";
 
 export function AgentPage() {
     const [mode, setMode] = useState<Mode>("text");
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const { messages, input, setInput, handleSubmit, isLoading, append, setMessages } = useChat({
         api: "/api/agent/chat",
     });
+
+    // Handle prefill from URL params (e.g., from Messages page actions)
+    useEffect(() => {
+        const prefill = searchParams.get("prefill");
+        if (prefill) {
+            setInput(prefill);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setInput, setSearchParams]);
 
     const { isListening, toggleListening } = useSpeechRecognition({
         onTranscript: (transcript) => {

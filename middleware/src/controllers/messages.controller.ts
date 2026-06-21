@@ -1,8 +1,15 @@
 import { Request, Response } from "express";
-import { Message as OsdkMessage } from "@ai-assistant-third-party-app/sdk";
+import { Message as OsdkMessage, runAdvancedMessageSearchToString } from "@ai-assistant-third-party-app/sdk";
 import { Osdk } from "@osdk/client";
 import { client } from "../config/foundry";
-import { MessageFilters, MessagesResponse, Message } from "shared";
+import {
+    MessageFilters,
+    MessagesResponse,
+    Message,
+    MessageSearchFilters,
+    MessageSearchResponse,
+    Environment,
+} from "shared";
 
 /**
  * POST endpoint that fetches messages by IDs
@@ -36,5 +43,42 @@ export async function getMessages(req: Request, res: Response) {
         console.error("Error fetching messages:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to fetch messages";
         return res.status(500).json({ error: "Failed to fetch messages", details: errorMessage });
+    }
+}
+
+/**
+ * POST /api/messages/search
+ * Smart search across messages using phrase groups (AND/OR logic)
+ */
+export async function searchMessages(req: Request, res: Response) {
+    try {
+        const { phraseGroups, chatIds, surroundingMessagesCount }: MessageSearchFilters = req.body;
+
+        if (!phraseGroups?.length) {
+            return res.status(400).json({ error: "phraseGroups array is required" });
+        }
+
+        const andConditions: Array<Record<string, unknown>> = [
+            { environment: { $eq: Environment.PRODUCTION } },
+        ];
+
+        if (chatIds?.length) {
+            andConditions.push({ chatId: { $in: chatIds } });
+        }
+
+        const messagesToStartSearchFrom = client(OsdkMessage).where({ $and: andConditions });
+
+        const result = await client(runAdvancedMessageSearchToString).executeFunction({
+            messagesToStartSearchFrom,
+            phraseGroups,
+            surroundingMessagesCount,
+        });
+
+        const response: MessageSearchResponse = { result };
+        return res.json(response);
+    } catch (error) {
+        console.error("Error searching messages:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to search messages";
+        return res.status(500).json({ error: "Failed to search messages", details: errorMessage });
     }
 }

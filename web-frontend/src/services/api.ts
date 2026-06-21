@@ -10,6 +10,12 @@ import type {
     TaskChangelogsResponse,
     MessageFilters,
     MessagesResponse,
+    ChatFilters,
+    ChatsResponse,
+    ChatMessagesFilters,
+    ChatMessagesResponse,
+    ChatDetailResponse,
+    MessagesMetricsResponse,
 } from "shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -94,6 +100,25 @@ export const tasksApi = {
 export const messagesApi = {
     getMessages: async (filters: MessageFilters): Promise<MessagesResponse> => {
         const response = await api.post<MessagesResponse>("/api/messages", filters);
+        return response.data;
+    },
+    getMetrics: async (): Promise<MessagesMetricsResponse> => {
+        const response = await api.get<MessagesMetricsResponse>("/api/messages/metrics");
+        return response.data;
+    },
+};
+
+export const chatsApi = {
+    getChats: async (filters?: ChatFilters): Promise<ChatsResponse> => {
+        const response = await api.post<ChatsResponse>("/api/chats", filters || {});
+        return response.data;
+    },
+    getChatMessages: async (chatId: string, filters?: ChatMessagesFilters): Promise<ChatMessagesResponse> => {
+        const response = await api.post<ChatMessagesResponse>(`/api/chats/${chatId}/messages`, filters || {});
+        return response.data;
+    },
+    getChatDetail: async (chatId: string): Promise<ChatDetailResponse> => {
+        const response = await api.get<ChatDetailResponse>(`/api/chats/${chatId}/detail`);
         return response.data;
     },
 };
